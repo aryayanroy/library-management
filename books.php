@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Borrows | Library Management</title>
+    <title>Books | Library Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,8 +21,8 @@
                     <hr>
                     <nav class="nav nav-pills flex-column flex-grow-1">
                         <a href="dashboard" class="nav-link link-dark"><i class="fa-solid fa-gauge me-2"></i><span>Dashboard</span></a>
-                        <a href="borrows" class="nav-link active"><i class="fa-solid fa-list-check me-2"></i><span>Borrows</span></a>
-                        <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
+                        <a href="borrows" class="nav-link link-dark"><i class="fa-solid fa-list-check me-2"></i><span>Borrows</span></a>
+                        <a href="books" class="nav-link active"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
                         <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
@@ -71,41 +71,33 @@
                     <table id="data-table" class="table table-bordered table-striped table-sm mt-1">
                         <tr>
                             <th>Sl</th>
-                            <th>Borrower ID</th>
-                            <th>Book ID</th>
-                            <th>Issue</th>
-                            <th>Due</th>
-                            <th>Fine (₹)</th>
-                            <th colspan=2>Action</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>ISBN</th>
+                            <th>Availability</th>
+                            <th>Call Number</th>
+                            <th colspan="2">Action</th>
                         </tr>
                         <tr>
                             <td class="text-center">1</td>
-                            <td><a href="#" class="text-decoration-none">BTECH/10504/22</a></td>
-                            <td><a href="#" class="text-decoration-none">TB-2344-FF2</a></td>
-                            <td class="text-center">10-06-2022</td>
-                            <td class="text-center">20-06-2022</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-center"><button type="button" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i></button></td>
+                            <td>Chemistry</td>
+                            <td>Emily Dickinson</td>
+                            <td class="text-center">978-3-16-148410-0</td>
+                            <td class="text-center text-success">Yes</td>
+                            <td class="text-center">LA-229-L423-1993</td>
+                            <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-clock-rotate-left"></i></button></td>
+                            <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i></button></td>
                             <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
                         <tr>
                             <td class="text-center">2</td>
-                            <td><a href="#" class="text-decoration-none">BTECH/10504/22</a></td>
-                            <td><a href="#" class="text-decoration-none">TB-2344-FF2</a></td>
-                            <td class="text-center">10-06-2022</td>
-                            <td class="text-center">20-06-2022</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-center"><button type="button" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i></button></td>
-                            <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">3</td>
-                            <td><a href="#" class="text-decoration-none">BTECH/10504/22</a></td>
-                            <td><a href="#" class="text-decoration-none">TB-2344-FF2</a></td>
-                            <td class="text-center">10-06-2022</td>
-                            <td class="text-center">20-06-2022</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-center"><button type="button" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i></button></td>
+                            <td>Chemistry</td>
+                            <td>Emily Dickinson</td>
+                            <td class="text-center">978-3-16-148410-0</td>
+                            <td class="text-center text-success">Yes</td>
+                            <td class="text-center">LA-229-L423-1993</td>
+                            <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-clock-rotate-left"></i></button></td>
+                            <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i></button></td>
                             <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
                     </table>
