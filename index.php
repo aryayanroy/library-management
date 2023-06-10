@@ -18,7 +18,7 @@
             font-weight: 600;
         }
         body{
-            font-family: "Noto Sans", sans-serif;
+            font-family: Noto Sans, sans-serif;
         }
     </style>
 </head>
