@@ -43,10 +43,10 @@
                 </header>
                 <article class="container-fluid py-3">
                     <h5>Borrows</h5>
-                    <div class="row justify-content-between">
+                    <div class="row justify-content-between mb-3">
                         <div class="col-4">
                             <div class="input-group">
-                                <span class="input-group-text">Sort by</span>
+                                <span class="input-group-text">Sort</span>
                                 <select class="form-select">
                                     <option>Issue</option>
                                     <option>Due</option>
@@ -65,7 +65,8 @@
                             </form>
                         </div>
                     </div>
-                    <table id="data-table" class="table table-bordered table-striped table-sm mt-3">
+                    <div>Found 25 records</div>
+                    <table id="data-table" class="table table-bordered table-striped table-sm mt-1">
                         <tr>
                             <th>Sl</th>
                             <th>Borrower ID</th>
@@ -106,6 +107,13 @@
                             <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
                     </table>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item"><a href="#" class="page-link"><i class="fa-solid fa-angles-left"></i></a></li>
+                        <li class="page-item active"><a href="#" class="page-link">1</a></li>
+                        <li class="page-item"><a href="#" class="page-link">2</a></li>
+                        <li class="page-item"><a href="#" class="page-link">3</a></li>
+                        <li class="page-item"><a href="#" class="page-link"><i class="fa-solid fa-angles-right"></i></a></li>
+                    </ul>
                 </article>
             </main>
         </div>
