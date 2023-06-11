@@ -1,6 +1,9 @@
 <?php
     session_start();
-
+    if(isset($_SESSION["admin"])){
+        header("Location: dashboard");
+        die();
+    }
     if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["login"], $_POST["username"], $_POST["password"])){
         require "config.php";
 
