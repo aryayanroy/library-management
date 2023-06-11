@@ -66,7 +66,7 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <form action=<?php echo $_SERVER["PHP_SELF"]; ?> method="post" class="mx-auto mt-5" style="max-width: 350px">
+                    <form action=<?php echo $_SERVER["PHP_SELF"];?> method="post" class="mx-auto mt-5" style="max-width: 350px">
                         <h3>Login</h3>
                         <div class="form-floating">
                             <input type="text" name="username" class="form-control" placeholder="Login ID">
@@ -83,7 +83,7 @@
             </main>
         </div>
     </div>
-    <!-- Off canvas -->
+    <!-- off canvas -->
     <aside id="aside-right" class="offcanvas offcanvas-end">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title text-truncate">Hello, Sabrina</h5>
@@ -99,9 +99,6 @@
                 <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
                 <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
-        </div>
-        <div class="p-3 border-top">
-            <a href="#" class="btn btn-light w-100">Logout</a>
         </div>
     </aside>
 </body>
