@@ -23,10 +23,10 @@
                     <nav class="nav nav-pills flex-column flex-grow-1">
                         <a href="dashboard" class="nav-link link-dark"><i class="fa-solid fa-gauge me-2"></i><span>Dashboard</span></a>
                         <a href="borrows" class="nav-link link-dark"><i class="fa-solid fa-list-check me-2"></i><span>Borrows</span></a>
-                        <a href="books" class="nav-link active"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
+                        <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
-                        <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
+                        <a href="transactions" class="nav-link active"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
                         <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
@@ -46,22 +46,8 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-new"><i class="fa-solid fa-plus me-2"></i><span>Add new</span></button></div>
-                    <div class="row g-3 justify-content-between my-3">
-                        <div class="col-sm-6 col-md-4">
-                            <div class="input-group">
-                                <span class="input-group-text">Sort</span>
-                                <select class="form-select">
-                                    <option>Issue</option>
-                                    <option>Due</option>
-                                    <option>Fine</option>
-                                </select>
-                                <select class="form-select">
-                                    <option>Assending</option>
-                                    <option>Decending</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="row g-3 justify-content-between mb-3">
+                        <div class="col-sm-6 col-md-4"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-new"><i class="fa-solid fa-plus me-2"></i><span>Add new</span></button></div>
                         <div class="col-sm-6 col-md-4">
                             <form action="#" method="post" class="input-group">
                                 <input type="text" class="form-control" placeholder="Search">
@@ -74,34 +60,21 @@
                         <table class="table table-bordered table-hover table-striped table-sm mt-1">
                             <tr>
                                 <th>Sl</th>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>ISBN</th>
-                                <th>Availability</th>
-                                <th>Call Number</th>
-                                <th colspan="3">Action</th>
+                                <th>SBIN</th>
+                                <th>Type</th>
+                                <th>Amount(₹)</th>
+                                <th>Provider</th>
+                                <th>Date</th>
+                                <th>Time</th>
                             </tr>
                             <tr>
                                 <td class="text-center">1</td>
-                                <td>Chemistry</td>
-                                <td>Emily Dickinson</td>
-                                <td class="text-center text-nowrap">978-3-16-148410-0</td>
-                                <td class="text-center text-success">Yes</td>
-                                <td class="text-center text-nowrap">LA-229-L423-1993</td>
-                                <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-clock-rotate-left"></i></button></td>
-                                <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i></button></td>
-                                <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
-                            </tr>
-                            <tr>
-                                <td class="text-center">2</td>
-                                <td>Chemistry</td>
-                                <td>Emily Dickinson</td>
-                                <td class="text-center">978-3-16-148410-0</td>
-                                <td class="text-center text-success">Yes</td>
-                                <td class="text-center">LA-229-L423-1993</td>
-                                <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-clock-rotate-left"></i></button></td>
-                                <td class="text-center"><button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i></button></td>
-                                <td class="text-center"><button type="button" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button></td>
+                                <td>978-3-16-148410-0</td>
+                                <td class="text-center">Fine</td>
+                                <td class="text-end">0.00</td>
+                                <td>--</td>
+                                <td>12-07-2023</td>
+                                <td>21:23</td>
                             </tr>
                         </table>
                     </div>
@@ -148,31 +121,25 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <label for="isbn" class="form-label">ISBN</label>
-                            <input type="text" name="isbn" class="form-control" placeholder="XX-XXXX-XXX-X">
+                            <input type="text" id="isbn" name="isbn" class="form-control" placeholder="XX-XXXX-XXX-X">
                         </div>
                         <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Title</label>
-                            <input type="text" name="title" class="form-control">
+                            <label for="type" class="form-label">Type</label>
+                            <select id="type" name="type" class="form-select">
+                                <option>Fine</option>
+                                <option>Purchase</option>
+                            </select>
                         </div>
                         <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Author(s)</label>
-                            <input type="text" name="author" class="form-control">
+                            <label for="amount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="text" id="amount" name="amount" class="form-control">
+                            </div>
                         </div>
                         <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Subject</label>
-                            <input type="text" name="author" class="form-control">
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Publisher</label>
-                            <input type="text" name="author" class="form-control">
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Publication Date</label>
-                            <input type="date" name="author" class="form-control">
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Call Number</label>
-                            <input type="text" name="author" class="form-control">
+                            <label for="provider" class="form-label">Provider</label>
+                            <input type="text" id="provider" name="provider" class="form-control">
                         </div>
                     </div>
                 </div>
@@ -184,12 +151,4 @@
     </div>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-<script>
-    $(document).ready(function(){
-        $("#isbn-validity").click(function(){
-            $("#isbn").val()
-        })
-    })
-</script>
 </html>
