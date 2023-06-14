@@ -1,3 +1,30 @@
+<?php
+    session_start();
+    if(!isset($_SESSION["admin"])){
+        header("Location: login");
+        die();
+    }
+    if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["isbn"], $_POST["type"], $_POST["amount"], $_POST["provider"], $_POST["date"], $_POST["receipt"])){
+        require "config.php";
+
+        $isbn = trim($_POST["isbn"]);
+        $type = trim($_POST["type"]);
+        $amount = trim($_POST["amount"]);
+        $provider = trim($_POST["provider"]);
+        $date = trim($_POST["date"]);
+        $receipt = trim($_POST["receipt"]);
+
+        $sql = $conn->prepare("INSERT INTO transactions (isbn, type, amount, provider, date, receipt_number) VALUES (?, ?, ?, ?, ?, ?)");
+        $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+        $sql->bindParam(2, $type, PDO::PARAM_BOOL);
+        $sql->bindParam(3, $amount, PDO::PARAM_INT);
+        $sql->bindParam(4, $provider, PDO::PARAM_STR);
+        $sql->bindParam(5, $date, PDO::PARAM_STR);
+        $sql->bindParam(6, $receipt, PDO::PARAM_STR);
+        $sql->execute();
+        header("Location: transactions");
+    }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,16 +92,16 @@
                                 <th>Amount(₹)</th>
                                 <th>Provider</th>
                                 <th>Date</th>
-                                <th>Time</th>
+                                <th>Recipt number</th>
                             </tr>
                             <tr>
                                 <td class="text-center">1</td>
                                 <td>978-3-16-148410-0</td>
                                 <td class="text-center">Fine</td>
                                 <td class="text-end">0.00</td>
-                                <td>--</td>
+                                <td class="text-center">--</td>
                                 <td>12-07-2023</td>
-                                <td>21:23</td>
+                                <td>INV-21-12-009</td>
                             </tr>
                         </table>
                     </div>
@@ -121,7 +148,7 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <label for="isbn" class="form-label">ISBN</label>
-                            <input type="text" id="isbn" name="isbn" class="form-control" placeholder="XX-XXXX-XXX-X">
+                            <input type="text" id="isbn" name="isbn" class="form-control" placeholder="XX-XXXX-XXX-X" required>
                         </div>
                         <div class="col-sm-6">
                             <label for="type" class="form-label">Type</label>
@@ -134,17 +161,25 @@
                             <label for="amount" class="form-label">Amount</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
-                                <input type="text" id="amount" name="amount" class="form-control">
+                                <input type="number" id="amount" name="amount" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <label for="provider" class="form-label">Provider</label>
-                            <input type="text" id="provider" name="provider" class="form-control">
+                            <input type="text" id="provider" name="provider" class="form-control" spellcheck="false" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="date" class="form-label">Payment date</label>
+                            <input type="date" id="date" name="date" class="form-control" max="2000-01-01" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="receipt" class="form-label">Receipt number</label>
+                            <input type="text" id="receipt" name="receipt" class="form-control" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add record</button>
+                    <button type="submit" name="add-record" class="btn btn-primary">Add record</button>
                 </div>
             </form>
         </div>
