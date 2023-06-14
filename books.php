@@ -46,8 +46,7 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-new"><i class="fa-solid fa-plus me-2"></i><span>Add new</span></button></div>
-                    <div class="row g-3 justify-content-between my-3">
+                    <div class="row g-3 justify-content-between mb-3">
                         <div class="col-sm-6 col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text">Sort</span>

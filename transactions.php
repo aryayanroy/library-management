@@ -7,8 +7,27 @@
     if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["isbn"], $_POST["type"], $_POST["amount"], $_POST["provider"], $_POST["date"], $_POST["receipt"])){
         require "config.php";
 
-        $isbn = trim($_POST["isbn"]);
         $type = trim($_POST["type"]);
+
+        if($type==1){   //Purchase of book
+
+            //Insert book in books table
+            $isbn = trim($_POST["isbn"]);
+            $sql = $conn->prepare("INSERT INTO books isbn VALUES ?");
+            $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+            $sql->execute();
+
+            //Select book id from ISBN
+            $isbn = trim($_POST["isbn"]);
+            $sql = $conn->prepare("INSERT INTO books isbn VALUES ?");
+            $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+            $sql->execute();
+
+
+        }else if($type==0){
+
+        }
+
         $amount = trim($_POST["amount"]);
         $provider = trim($_POST["provider"]);
         $date = trim($_POST["date"]);
@@ -153,8 +172,8 @@
                         <div class="col-sm-6">
                             <label for="type" class="form-label">Type</label>
                             <select id="type" name="type" class="form-select">
-                                <option>Fine</option>
-                                <option>Purchase</option>
+                                <option value="0">Fine</option>
+                                <option value="1">Purchase</option>
                             </select>
                         </div>
                         <div class="col-sm-6">

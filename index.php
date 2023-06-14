@@ -73,7 +73,7 @@
                             <label for="#">Username</label>
                         </div>
                         <div class="form-floating my-3">
-                            <input type="password" name="password" class="form-control" placeholder="Password">
+                            <input type="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
                             <label for="#">Password</label>
                         </div>
                         <div><button type="submit" name="login" class="btn btn-primary w-100">Login</button></div>
