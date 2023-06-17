@@ -4,44 +4,79 @@
         header("Location: login");
         die();
     }
-    if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["isbn"], $_POST["type"], $_POST["amount"], $_POST["provider"], $_POST["date"], $_POST["receipt"])){
-        require "config.php";
+    
+    require "config.php";
 
-        $type = trim($_POST["type"]);
+    //Get admin username
+    $sql = $conn->prepare("SELECT username FROM admins WHERE id = ?");
+    $sql->bindParam(1, $_SESSION["admin"], PDO::PARAM_STR);
+    $sql->execute();
+    $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
-        if($type==1){   //Purchase of book
-
-            //Insert book in books table
+    if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["action"])){
+        if($_POST["action"]=="submit"){
             $isbn = trim($_POST["isbn"]);
-            $sql = $conn->prepare("INSERT INTO books isbn VALUES ?");
+            //fetch book id
+            $sql = $conn->prepare("SELECT id FROM books WHERE isbn = ?");
             $sql->bindParam(1, $isbn, PDO::PARAM_STR);
             $sql->execute();
-
-            //Select book id from ISBN
-            $isbn = trim($_POST["isbn"]);
-            $sql = $conn->prepare("INSERT INTO books isbn VALUES ?");
-            $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+            if($sql->rowCount()==1){
+                $book_exists = true;
+                $book = $sql->fetch(PDO::FETCH_NUM)[0];
+            }else{
+                $book_exists = false;
+            }
+            $type = trim($_POST["type"]);
+            if(($type==0 && $book_exists==true) || ($type==1 && $book_exists==false)){
+                if($type==1){   //Insert into book records
+                    $sql = $conn->prepare("INSERT INTO books (isbn) VALUES (?)");
+                    $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+                    $sql->execute();
+                    //Get book id
+                    $sql = $conn->prepare("SELECT id FROM books WHERE isbn = ?");
+                    $sql->bindParam(1, $isbn, PDO::PARAM_STR);
+                    $sql->execute();
+                    $book = $sql->fetch(PDO::FETCH_NUM)[0];
+                }
+                //Insert into transactions
+                $amount = trim($_POST["amount"]);
+                $provider = trim($_POST["provider"]);
+                $date = trim($_POST["date"]);
+                $receipt = trim($_POST["receipt"]);
+                $sql = $conn->prepare("INSERT INTO transactions (book, type, amount, provider, date, receipt_number) VALUES (?, ?, ?, ?, ?, ?)");
+                $sql->bindParam(1, $book, PDO::PARAM_INT);
+                $sql->bindParam(2, $type, PDO::PARAM_BOOL);
+                $sql->bindParam(3, $amount, PDO::PARAM_INT);
+                $sql->bindParam(4, $provider, PDO::PARAM_STR);
+                $sql->bindParam(5, $date, PDO::PARAM_STR);
+                $sql->bindParam(6, $receipt, PDO::PARAM_STR);
+                $sql->execute();
+                $feedback = array(true, "Data is recorded");
+            }else if($type==0 && $book_exists==false){  //Fine + Book doesn't exists
+                $feedback = array(false, "Book is not available in the records");
+            }else if($type==1 && $book_exists==true){   //Purchse + Book exists
+                $feedback = array(false, "Book already exists in the records");
+            }
+        }else if($_POST["action"]=="load"){
+            $sql = $conn->prepare("SELECT book, type, amount, provider, date, receipt_number FROM transactions");
             $sql->execute();
-
-
-        }else if($type==0){
-
+            if($sql->rowCount()==0){
+                $feedback = array(false, "No records found");
+            }else{
+                $rows = array();
+                while($row = $sql->fetch(PDO::FETCH_NUM)){
+                    $sql2 = $conn->prepare("SELECT isbn FROM books WHERE id = ?");
+                    $sql2->bindParam(1, $row[0], PDO::PARAM_INT);
+                    $sql2->execute();
+                    $row[0] = $sql2->fetch(PDO::FETCH_NUM)[0];
+                    array_push($rows, $row);
+                }
+                $feedback = array(true, $rows);
+            }
         }
 
-        $amount = trim($_POST["amount"]);
-        $provider = trim($_POST["provider"]);
-        $date = trim($_POST["date"]);
-        $receipt = trim($_POST["receipt"]);
-
-        $sql = $conn->prepare("INSERT INTO transactions (isbn, type, amount, provider, date, receipt_number) VALUES (?, ?, ?, ?, ?, ?)");
-        $sql->bindParam(1, $isbn, PDO::PARAM_STR);
-        $sql->bindParam(2, $type, PDO::PARAM_BOOL);
-        $sql->bindParam(3, $amount, PDO::PARAM_INT);
-        $sql->bindParam(4, $provider, PDO::PARAM_STR);
-        $sql->bindParam(5, $date, PDO::PARAM_STR);
-        $sql->bindParam(6, $receipt, PDO::PARAM_STR);
-        $sql->execute();
-        header("Location: transactions");
+        echo json_encode($feedback);
+        die();
     }
 ?>
 <!DOCTYPE html>
@@ -77,7 +112,7 @@
                     </nav>
                     <hr>
                     <div class="dropup-start dropup">
-                        <button type="button" class="btn w-100 dropdown-toggle text-truncate" data-bs-toggle="dropdown">Hello, Sabrina</button>
+                        <button type="button" class="btn w-100 dropdown-toggle text-truncate" data-bs-toggle="dropdown">Hello, <?php echo $username; ?></button>
                         <ul class="dropdown-menu">
                             <li><a href="logout" class="dropdown-item">Logout</a></li>
                         </ul>
@@ -101,9 +136,9 @@
                             </form>
                         </div>
                     </div>
-                    <div><span class="text-secondary me-2">Total records found:</span><b>25</b></div>
+                    <div><span class="text-secondary me-2">Total records found:</span><b id="records-count"></b></div>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover table-striped table-sm mt-1">
+                        <table id="data-table" class="table table-bordered table-hover table-striped table-sm mt-1">
                             <tr>
                                 <th>Sl</th>
                                 <th>SBIN</th>
@@ -112,15 +147,6 @@
                                 <th>Provider</th>
                                 <th>Date</th>
                                 <th>Recipt number</th>
-                            </tr>
-                            <tr>
-                                <td class="text-center">1</td>
-                                <td>978-3-16-148410-0</td>
-                                <td class="text-center">Fine</td>
-                                <td class="text-end">0.00</td>
-                                <td class="text-center">--</td>
-                                <td>12-07-2023</td>
-                                <td>INV-21-12-009</td>
                             </tr>
                         </table>
                     </div>
@@ -158,7 +184,7 @@
     </aside>
     <div id="add-new" class="modal fade">
         <div class="modal-dialog modal-fullscreen-sm-down">
-            <form action="<?php echo $_SERVER["PHP_SELF"];?>" method="post" class="modal-content">
+            <form id="data-form" action="#" method="post" class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Add new</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -189,7 +215,7 @@
                         </div>
                         <div class="col-sm-6">
                             <label for="date" class="form-label">Payment date</label>
-                            <input type="date" id="date" name="date" class="form-control" max="2000-01-01" required>
+                            <input type="date" id="date" name="date" class="form-control" max="<?php echo date("Y-m-d"); ?>" required>
                         </div>
                         <div class="col-sm-6">
                             <label for="receipt" class="form-label">Receipt number</label>
@@ -198,11 +224,67 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" name="add-record" class="btn btn-primary">Add record</button>
+                    <button type="submit" id="add-btn" class="btn btn-primary">Add record</button>
                 </div>
             </form>
         </div>
     </div>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function(){
+
+        function load_table(){
+            $.post(
+                window.location.href,
+                {action: "load"}
+            ).done(function(data){
+                var feedback = JSON.parse(data);
+                if(feedback[0] == true){
+                    var data = feedback[1];
+                    for(i=0; i<data.length; i++){
+                        $("#data-table").append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+data[i][0]+"<td></tr>");
+                    }
+                }else{
+                    $("#data-table").append("<td colspan='7' class='text-center'>"+feedback[1]+"<td>");
+                    $("#records-count").html("0");
+                }
+            }).fail(function(){
+                alert("Couldn't load records");
+            })
+        }
+
+        load_table();
+
+        $("#data-form").submit(function(e){
+            e.preventDefault();
+            $("#add-btn").prop("disabled", true).html("<i class='fas fa-spinner fa-pulse'></i>");
+            var form_data = $(this).serializeArray();
+		    form_data.push({name: "action", value: "submit"});
+		    form_data = $.param(form_data);
+            $.post(
+                window.location.href,
+                form_data
+            ).done(function(data){
+                console.log(data);
+                var feedback = JSON.parse(data);
+                $("#isbn+.invalid-feedback").remove();
+                if(feedback[0]==true){
+                    $("#data-form")[0].reset();
+                    $("#add-new").modal("hide");
+                    $("#isbn").removeClass("is-invalid");
+                    alert(feedback[1]);
+                }else if(feedback[0]==false){
+                    $("#isbn").addClass("is-invalid");
+                    $("#isbn").after("<div class='invalid-feedback'>"+feedback[1]+"</div>");
+                }
+            }).fail(function(){
+                alert("Unexpected error");
+            }).always(function(){
+                $("#add-btn").prop("disabled", false).html("Add record");
+            })
+        })
+    })
+</script>
 </html>
