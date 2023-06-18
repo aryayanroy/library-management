@@ -26,7 +26,6 @@
                         <a href="books" class="nav-link active"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
-                        <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
                         <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
@@ -46,7 +45,8 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <div class="row g-3 justify-content-between mb-3">
+                    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-new"><i class="fa-solid fa-plus me-2"></i><span>Add record</span></button></div>
+                    <div class="row g-3 justify-content-between mt-2 mb-3">
                         <div class="col-sm-6 col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text">Sort</span>
@@ -128,7 +128,6 @@
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                 <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
-                <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
                 <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
         </div>
@@ -158,8 +157,10 @@
                             <input type="text" name="author" class="form-control">
                         </div>
                         <div class="col-sm-6">
-                            <label for="isbn" class="form-label">Subject</label>
-                            <input type="text" name="author" class="form-control">
+                            <label for="isbn" class="form-label">Genres</label>
+                            <select name="" class="form-select">
+                                <option></option>
+                            </select>
                         </div>
                         <div class="col-sm-6">
                             <label for="isbn" class="form-label">Publisher</label>
@@ -185,10 +186,5 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script>
-    $(document).ready(function(){
-        $("#isbn-validity").click(function(){
-            $("#isbn").val()
-        })
-    })
 </script>
 </html>

@@ -1,10 +1,10 @@
 <?php
     session_start();
     if(!isset($_SESSION["admin"])){
-        header("Location: login");
+        header("Location: /library-management");
         die();
     }
-    
+
     require "config.php";
 
     //Get admin username
@@ -15,64 +15,61 @@
 
     if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["action"])){
         if($_POST["action"]=="submit"){
-            $isbn = trim($_POST["isbn"]);
-            //fetch book id
-            $sql = $conn->prepare("SELECT id FROM books WHERE isbn = ?");
-            $sql->bindParam(1, $isbn, PDO::PARAM_STR);
-            $sql->execute();
-            if($sql->rowCount()==1){
-                $book_exists = true;
-                $book = $sql->fetch(PDO::FETCH_NUM)[0];
+            $genre = trim($_POST["genre"]);
+            if($_POST["parent-genre"]==NULL){
+                $sql = $conn->prepare("INSERT INTO genres (title) VALUES (?)");
             }else{
-                $book_exists = false;
+                $sql = $conn->prepare("INSERT INTO genres (title, parent_genre) VALUES (?, ?)");
+                $sql->bindParam(2, $_POST["parent-genre"], PDO::PARAM_INT);
             }
-            $type = trim($_POST["type"]);
-            if(($type==0 && $book_exists==true) || ($type==1 && $book_exists==false)){
-                if($type==1){   //Insert into book records
-                    $sql = $conn->prepare("INSERT INTO books (isbn) VALUES (?)");
-                    $sql->bindParam(1, $isbn, PDO::PARAM_STR);
-                    $sql->execute();
-                    //Get book id
-                    $sql = $conn->prepare("SELECT id FROM books WHERE isbn = ?");
-                    $sql->bindParam(1, $isbn, PDO::PARAM_STR);
-                    $sql->execute();
-                    $book = $sql->fetch(PDO::FETCH_NUM)[0];
-                }
-                //Insert into transactions
-                $amount = trim($_POST["amount"]);
-                $provider = trim($_POST["provider"]);
-                $date = trim($_POST["date"]);
-                $receipt = trim($_POST["receipt"]);
-                $sql = $conn->prepare("INSERT INTO transactions (book, type, amount, provider, date, receipt_number) VALUES (?, ?, ?, ?, ?, ?)");
-                $sql->bindParam(1, $book, PDO::PARAM_INT);
-                $sql->bindParam(2, $type, PDO::PARAM_BOOL);
-                $sql->bindParam(3, $amount, PDO::PARAM_INT);
-                $sql->bindParam(4, $provider, PDO::PARAM_STR);
-                $sql->bindParam(5, $date, PDO::PARAM_STR);
-                $sql->bindParam(6, $receipt, PDO::PARAM_STR);
-                $sql->execute();
-                $feedback = array(true, "Data is recorded");
-            }else if($type==0 && $book_exists==false){  //Fine + Book doesn't exists
-                $feedback = array(false, "Book is not available in the records");
-            }else if($type==1 && $book_exists==true){   //Purchse + Book exists
-                $feedback = array(false, "Book already exists in the records");
-            }
-        }else if($_POST["action"]=="load"){
-            $sql = $conn->prepare("SELECT book, type, amount, provider, date, receipt_number FROM transactions");
+            $sql->bindParam(1, $genre, PDO::PARAM_STR);
             $sql->execute();
-            if($sql->rowCount()==0){
-                $feedback = array(false, "No records found");
+            $feedback =  array(true, "Data recorded successfully");
+
+        }else if($_POST["action"]=="load-genre"){
+            $sql = $conn->prepare("SELECT id, title FROM genres");
+            $sql->execute();
+            if($sql->rowCount()>0){
+                $feedback = array(true, $sql->fetchAll(PDO::FETCH_NUM));
             }else{
+                $feedback = array(false);
+            }
+        }else if($_POST["action"]=="load-records"){
+            $sql = $conn->prepare("SELECT * FROM genres");
+            $sql->execute();
+            if($sql->rowCount()>0){
                 $rows = array();
-                while($row = $sql->fetch(PDO::FETCH_NUM)){
-                    $sql2 = $conn->prepare("SELECT isbn FROM books WHERE id = ?");
+                while ($row = $sql->fetch(PDO::FETCH_NUM)){
+                    
+                    $sql2 = $conn->prepare("SELECT * FROM genres WHERE parent_genre = ?");
                     $sql2->bindParam(1, $row[0], PDO::PARAM_INT);
                     $sql2->execute();
-                    $row[0] = $sql2->fetch(PDO::FETCH_NUM)[0];
+                    if($sql2->rowCount()==0){
+                        $row[3]=true;
+                    }else{
+                        $row[3]=false;
+                    }
+
+                    if($row[2]!=null){
+                        $sql2 = $conn->prepare("SELECT title FROM genres WHERE id = ?");
+                        $sql2->bindParam(1, $row[2], PDO::PARAM_INT);
+                        $sql2->execute();
+                        $row[2] = $sql2->fetch(PDO::FETCH_NUM)[0];
+                    }
                     array_push($rows, $row);
                 }
                 $feedback = array(true, $rows);
+            }else{
+                $feedback = array(false, "No records found");
             }
+        }else if($_POST["action"]=="edit-data"){
+            $id = $_POST["id"];
+            $title = trim($_POST["title"]);
+            $sql = $conn->prepare("UPDATE genres SET title = ? WHERE id = ?");
+            $sql->bindParam(1, $title, PDO::PARAM_STR);
+            $sql->bindParam(2, $id, PDO::PARAM_INT);
+            $sql->execute();
+            $feedback = array(true, "Record updated successfully");
         }
 
         echo json_encode($feedback);
@@ -85,7 +82,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books | Library Management</title>
+    <title>Genres | Library Management</title>
     <link rel="shortcut icon" href="assets/public/images/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,7 +104,7 @@
                         <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
-                        <a href="transactions" class="nav-link active"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
+                        <a href="genres" class="nav-link active"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
                         <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
@@ -127,8 +124,22 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <div class="row g-3 justify-content-between mb-3">
-                        <div class="col-sm-6 col-md-4"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-new"><i class="fa-solid fa-plus me-2"></i><span>Add new</span></button></div>
+                    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-record"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
+                    <div class="row g-3 justify-content-between mt-2 mb-3">
+                        <div class="col-sm-6 col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text">Sort</span>
+                                <select class="form-select">
+                                    <option>Issue</option>
+                                    <option>Due</option>
+                                    <option>Fine</option>
+                                </select>
+                                <select class="form-select">
+                                    <option>Assending</option>
+                                    <option>Decending</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="col-sm-6 col-md-4">
                             <form action="#" method="post" class="input-group">
                                 <input type="text" class="form-control" placeholder="Search">
@@ -141,12 +152,10 @@
                         <table id="data-table" class="table table-bordered table-hover table-striped table-sm mt-1">
                             <tr>
                                 <th>Sl</th>
-                                <th>SBIN</th>
-                                <th>Type</th>
-                                <th>Amount(₹)</th>
-                                <th>Provider</th>
-                                <th>Date</th>
-                                <th>Recipt number</th>
+                                <th>Genres</th>
+                                <th>Subgenre</th>
+                                <th>Books</th>
+                                <th colspan="2">Action</th>
                             </tr>
                         </table>
                     </div>
@@ -174,7 +183,7 @@
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                 <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
-                <a href="transactions" class="nav-link link-dark"><i class="fa-solid fa-receipt me-2"></i><span>Transactions</span></a>
+                <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
                 <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
         </div>
@@ -182,49 +191,29 @@
             <a href="logout" class="btn btn-light w-100">Logout</a>
         </div>
     </aside>
-    <div id="add-new" class="modal fade">
+    <div id="add-record" class="modal fade">
         <div class="modal-dialog modal-fullscreen-sm-down">
-            <form id="data-form" action="#" method="post" class="modal-content">
+            <form action="#" method="post" id="data-form" class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add new</h5>
+                    <h5 class="modal-title">Add Genre</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-sm-6">
-                            <label for="isbn" class="form-label">ISBN</label>
-                            <input type="text" id="isbn" name="isbn" class="form-control" placeholder="XX-XXXX-XXX-X" required>
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="type" class="form-label">Type</label>
-                            <select id="type" name="type" class="form-select">
-                                <option value="0">Fine</option>
-                                <option value="1">Purchase</option>
+                            <label for="parent-genre" class="form-label">Parent Genre</label>
+                            <select id="parent-genre" name="parent-genre" class="form-select">
+                                <option value="">None</option>
                             </select>
                         </div>
                         <div class="col-sm-6">
-                            <label for="amount" class="form-label">Amount</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₹</span>
-                                <input type="number" id="amount" name="amount" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="provider" class="form-label">Provider</label>
-                            <input type="text" id="provider" name="provider" class="form-control" spellcheck="false" required>
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="date" class="form-label">Payment date</label>
-                            <input type="date" id="date" name="date" class="form-control" max="<?php echo date("Y-m-d"); ?>" required>
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="receipt" class="form-label">Receipt number</label>
-                            <input type="text" id="receipt" name="receipt" class="form-control" required>
+                            <label for="genre" class="form-label">Genre</label>
+                            <input type="text" id="genre" name="genre" class="form-control" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" id="add-btn" class="btn btn-primary">Add record</button>
+                    <button type="submit" id="submit-data" class="btn btn-primary">Add genre</button>
                 </div>
             </form>
         </div>
@@ -232,59 +221,11 @@
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="assets/public/js/genres.js"></script>
 <script>
     $(document).ready(function(){
-
-        function load_table(){
-            $.post(
-                window.location.href,
-                {action: "load"}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                if(feedback[0] == true){
-                    var data = feedback[1];
-                    for(i=0; i<data.length; i++){
-                        $("#data-table").append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+data[i][0]+"<td></tr>");
-                    }
-                }else{
-                    $("#data-table").append("<td colspan='7' class='text-center'>"+feedback[1]+"<td>");
-                    $("#records-count").html("0");
-                }
-            }).fail(function(){
-                alert("Couldn't load records");
-            })
-        }
-
-        load_table();
-
-        $("#data-form").submit(function(e){
-            e.preventDefault();
-            $("#add-btn").prop("disabled", true).html("<i class='fas fa-spinner fa-pulse'></i>");
-            var form_data = $(this).serializeArray();
-		    form_data.push({name: "action", value: "submit"});
-		    form_data = $.param(form_data);
-            $.post(
-                window.location.href,
-                form_data
-            ).done(function(data){
-                console.log(data);
-                var feedback = JSON.parse(data);
-                $("#isbn+.invalid-feedback").remove();
-                if(feedback[0]==true){
-                    $("#data-form")[0].reset();
-                    $("#add-new").modal("hide");
-                    $("#isbn").removeClass("is-invalid");
-                    alert(feedback[1]);
-                }else if(feedback[0]==false){
-                    $("#isbn").addClass("is-invalid");
-                    $("#isbn").after("<div class='invalid-feedback'>"+feedback[1]+"</div>");
-                }
-            }).fail(function(){
-                alert("Unexpected error");
-            }).always(function(){
-                $("#add-btn").prop("disabled", false).html("Add record");
-            })
-        })
+        var url = window.location.href;
+        
     })
 </script>
 </html>
