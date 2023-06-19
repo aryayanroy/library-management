@@ -43,9 +43,11 @@
             }
         }else if($_POST["action"]=="load-data"){
             $offset = ($_POST["page"]-1)*$_POST["rpp"];
-            $sql = $conn->prepare("SELECT * FROM genres LIMIT ?, ?");
-            $sql->bindParam(1, $offset, PDO::PARAM_INT);
-            $sql->bindParam(2, $_POST["rpp"], PDO::PARAM_INT);
+            $search = "%".trim($_POST["search"])."%";
+            $sql = $conn->prepare("SELECT * FROM genres WHERE title LIKE ? LIMIT ?, ?");
+            $sql->bindParam(1, $search, PDO::PARAM_STR);
+            $sql->bindParam(2, $offset, PDO::PARAM_INT);
+            $sql->bindParam(3, $_POST["rpp"], PDO::PARAM_INT);
             $sql->execute();
             if($sql->rowCount()>0){
                 $rows = array();
@@ -66,7 +68,8 @@
                     }
                     array_push($rows, $row);
                 }
-                $sql = $conn->prepare("SELECT * FROM genres");
+                $sql = $conn->prepare("SELECT * FROM genres WHERE title LIKE ?");
+                $sql->bindParam(1, $search, PDO::PARAM_STR);
                 $sql->execute();
                 $count = $sql->rowCount();
                 $feedback = array(true, $rows, $count);
@@ -86,7 +89,6 @@
             $sql->bindParam(1, $id, PDO::PARAM_INT);
             $feedback = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }
-
         echo json_encode($feedback);
         die();
     }
@@ -142,8 +144,8 @@
                     <div class="row g-3 justify-content-between mb-3">
                         <div class="col-sm-6"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-record"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
                         <div class="col-sm-6 col-md-4">
-                            <form action="#" method="post" class="input-group">
-                                <input type="text" class="form-control" placeholder="Search">
+                            <form action="#" method="post" id="search-form" class="input-group">
+                                <input type="text" id="search-field" class="form-control" placeholder="Search" spellcheck="false" autocomplete="off">
                                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
                             </form>
                         </div>
@@ -168,7 +170,7 @@
     <!-- off canvas -->
     <aside id="aside-right" class="offcanvas offcanvas-end">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title text-truncate">Hello, Sabrina</h5>
+            <h5 class="offcanvas-title text-truncate">Hello, <?php echo $username; ?></h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
@@ -216,5 +218,7 @@
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-<script src="assets/public/js/genres.js"></script>
+<script>
+$(document).ready(function(){var t=window.location.href;function e(e,a){e||(e=$(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1),a||(a=""),$.post(t,{action:"load-data",page:e,rpp:3,search:a}).done(function(t){var a=JSON.parse(t);if($("#data-table tr:not(:first-child)").remove(),!0==a[0]){var n=a[1],o=a[2],r=Math.ceil(o/3),d=(e-1)*3+1;for($("#records-count").html(o),i=0;i<n.length;i++){var l,s="-",c="-";null==n[i][2]?l=n[i][1]:(l=n[i][2],s=n[i][1]),!0==n[i][3]&&(c="<button type='button' class='btn btn-danger btn-sm delete-btn' value="+n[i][0]+"><i class='fa-solid fa-trash'></i></button>"),$("#data-table").append("<tr><td class='text-center'>"+(i+d)+"</td><td>"+l+"</td><td>"+s+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+n[i][0]+"' data-title='"+n[i][1]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'>"+c+"</td></tr>")}for($("#pagination>*").remove(),i=1;i<=r;i++)$("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>"),$("[data-page='"+e+"']").addClass("active")}else $("#data-table").append("<tr><td colspan='5' class='text-center'>No records found</td></tr>"),$("#records-count").html(0)})}function a(){$("#parent-genre option:not(:first)").remove(),$.post(t,{action:"load-genre"}).done(function(t){var e=JSON.parse(t);if(!0==e[0]){var a=e[1];for(i=0;i<a.length;i++)$("#parent-genre").append("<option value='"+a[i][0]+"'>"+a[i][1]+"</option>")}})}e(),a(),$("#data-form").submit(function(n){n.preventDefault(),$("#submit-data").prop("disabled",!0).html("<i class='fas fa-spinner fa-pulse'></i>");var o=$(this).serializeArray();o.push({name:"action",value:"submit"}),o=$.param(o),$.post(t,o).done(function(t){var n=JSON.parse(t);!0==n[0]&&($("#data-form")[0].reset(),$("#add-record").modal("hide")),alert(n[1]),e(),a()}).fail(function(){alert("Unexpected error")}).always(function(){$("#submit-data").prop("disabled",!1).html("Add record")})}),$(document).on("click",".edit-btn",function(){var a=prompt("Enter the Genre title",$(this).data("title"));if(a){var n=$(this).val();""!=(a=$.trim(a))?$.post(t,{action:"edit",title:a,id:n}).done(function(t){alert(JSON.parse(t)[1]),e()}).fail(function(){alert("Unexpected error")}):alert("Title cannot be empty")}}),$(document).on("click",".delete-btn",function(){if(confirm("Do you really want to delete this record? This will also delete the book records linked to this genere.")){var a=$(this).val();$.post(t,{action:"delete",id:a}).done(function(t){alert(JSON.parse(t)[1]),e()}).fail(function(){alert("Unexpected error")})}}),$(document).on("click",".page-link",function(t){t.preventDefault(),e($(this).data("page"),null)}),$("#search-form").submit(function(t){t.preventDefault(),e(null,$("#search-field").val())})});
+</script>
 </html>

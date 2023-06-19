@@ -1,8 +1,9 @@
 $(document).ready(function(){
     
     var url = window.location.href;
-
-    function load_data(page){
+    
+    //Load data
+    function load_data(page,search){
         if(!page){
             if($(".active[data-page]").data("page")){
                 page = $(".active[data-page]").data("page");
@@ -10,10 +11,13 @@ $(document).ready(function(){
                 page = 1;
             }
         }
-        var rpp = 25;
+        var rpp = 3;
+        if(!search){
+            search = "";
+        }
         $.post(
             url,
-            {action: "load-data", page: page, rpp: rpp}
+            {action: "load-data", page: page, rpp: rpp, search: search}
         ).done(function(data){
             var feedback = JSON.parse(data);
             $("#data-table tr:not(:first-child)").remove();
@@ -50,6 +54,7 @@ $(document).ready(function(){
     
     load_data();
 
+    //Load Genre
     function load_genre(){
         $("#parent-genre option:not(:first)").remove();
         $.post(
@@ -68,6 +73,7 @@ $(document).ready(function(){
 
     load_genre();
     
+    //Create
     $("#data-form").submit(function(e){
         e.preventDefault();
         $("#submit-data").prop("disabled", true).html("<i class='fas fa-spinner fa-pulse'></i>");
@@ -93,6 +99,7 @@ $(document).ready(function(){
         })
     })
 
+    //Edit
     $(document).on("click", ".edit-btn", function(){
         var title = prompt("Enter the Genre title",$(this).data("title"));
         if(title){
@@ -115,6 +122,7 @@ $(document).ready(function(){
         }
     })
 
+    //Delete
     $(document).on("click", ".delete-btn", function(){
         if(confirm("Do you really want to delete this record? This will also delete the book records linked to this genere.")){
             var id = $(this).val();
@@ -131,8 +139,15 @@ $(document).ready(function(){
         }
     })
 
+    //Pagination
     $(document).on("click", ".page-link", function(e){
         e.preventDefault();
-        load_data($(this).data("page"));
+        load_data($(this).data("page"), null);
+    })
+
+    //Search
+    $("#search-form").submit(function(e){
+        e.preventDefault();
+        load_data(null, $("#search-field").val());
     })
 })
