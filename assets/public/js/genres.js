@@ -1,16 +1,28 @@
 $(document).ready(function(){
+    
     var url = window.location.href;
-        
-    function load_data(){
+
+    function load_data(page){
+        if(!page){
+            if($(".active[data-page]").data("page")){
+                page = $(".active[data-page]").data("page");
+            }else{
+                page = 1;
+            }
+        }
+        var rpp = 25;
         $.post(
             url,
-            {action: "load-records"}
+            {action: "load-data", page: page, rpp: rpp}
         ).done(function(data){
             var feedback = JSON.parse(data);
             $("#data-table tr:not(:first-child)").remove();
             if(feedback[0]==true){
                 var rows = feedback[1];
-                $("#records-count").html(rows.length);
+                var count = feedback[2];
+                var pages = Math.ceil(count/rpp);
+                var offset = (page - 1) * rpp + 1;
+                $("#records-count").html(count);
                 for(i=0; i<rows.length; i++){
                     var genre, sub_genre = "-", action = "-";
                     if(rows[i][2]==null){
@@ -22,7 +34,12 @@ $(document).ready(function(){
                     if(rows[i][3]==true){
                         action = "<button type='button' class='btn btn-danger btn-sm delete-btn' value="+rows[i][0]+"><i class='fa-solid fa-trash'></i></button>";
                     }
-                    $("#data-table").append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+rows[i][0]+"' data-title='"+rows[i][1]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'>"+action+"</td></tr>");
+                    $("#data-table").append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+rows[i][0]+"' data-title='"+rows[i][1]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'>"+action+"</td></tr>");
+                }
+                $("#pagination>*").remove();
+                for(i=1; i<=pages; i++){
+                    $("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");
+                    $("[data-page='"+page+"']").addClass("active");
                 }
             }else{
                 $("#data-table").append("<tr><td colspan='5' class='text-center'>No records found</td></tr>")
@@ -84,13 +101,11 @@ $(document).ready(function(){
             if(title!=""){
                 $.post(
                 url,
-                {action: "edit-data", title: title, id: id}
+                {action: "edit", title: title, id: id}
                 ).done(function(data){
                     var feedback = JSON.parse(data);
-                    if(feedback[0]==true){
-                        alert(feedback[1]);
-                        load_data();
-                    }
+                    alert(feedback[1]);
+                    load_data();
                 }).fail(function(){
                     alert("Unexpected error");
                 })
@@ -98,5 +113,26 @@ $(document).ready(function(){
                 alert("Title cannot be empty");
             }
         }
+    })
+
+    $(document).on("click", ".delete-btn", function(){
+        if(confirm("Do you really want to delete this record? This will also delete the book records linked to this genere.")){
+            var id = $(this).val();
+            $.post(
+                url,
+                {action: "delete", id: id}
+            ).done(function(data){
+                var feedback = JSON.parse(data);
+                alert(feedback[1]);
+                load_data();
+            }).fail(function(){
+                alert("Unexpected error");
+            })   
+        }
+    })
+
+    $(document).on("click", ".page-link", function(e){
+        e.preventDefault();
+        load_data($(this).data("page"));
     })
 })

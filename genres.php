@@ -14,6 +14,15 @@
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
     if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["action"])){
+        function sql_execute($sql, $success, $error){
+            try{
+                $sql->execute();
+                $feedback = array(true, $success);
+            }catch(PDOException $e){
+                $feedback = array(false, $error);
+            }
+            return $feedback;
+        }
         if($_POST["action"]=="submit"){
             $genre = trim($_POST["genre"]);
             if($_POST["parent-genre"]==NULL){
@@ -23,9 +32,7 @@
                 $sql->bindParam(2, $_POST["parent-genre"], PDO::PARAM_INT);
             }
             $sql->bindParam(1, $genre, PDO::PARAM_STR);
-            $sql->execute();
-            $feedback =  array(true, "Data recorded successfully");
-
+            $feedback = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
         }else if($_POST["action"]=="load-genre"){
             $sql = $conn->prepare("SELECT id, title FROM genres");
             $sql->execute();
@@ -34,13 +41,15 @@
             }else{
                 $feedback = array(false);
             }
-        }else if($_POST["action"]=="load-records"){
-            $sql = $conn->prepare("SELECT * FROM genres");
+        }else if($_POST["action"]=="load-data"){
+            $offset = ($_POST["page"]-1)*$_POST["rpp"];
+            $sql = $conn->prepare("SELECT * FROM genres LIMIT ?, ?");
+            $sql->bindParam(1, $offset, PDO::PARAM_INT);
+            $sql->bindParam(2, $_POST["rpp"], PDO::PARAM_INT);
             $sql->execute();
             if($sql->rowCount()>0){
                 $rows = array();
                 while ($row = $sql->fetch(PDO::FETCH_NUM)){
-                    
                     $sql2 = $conn->prepare("SELECT * FROM genres WHERE parent_genre = ?");
                     $sql2->bindParam(1, $row[0], PDO::PARAM_INT);
                     $sql2->execute();
@@ -49,7 +58,6 @@
                     }else{
                         $row[3]=false;
                     }
-
                     if($row[2]!=null){
                         $sql2 = $conn->prepare("SELECT title FROM genres WHERE id = ?");
                         $sql2->bindParam(1, $row[2], PDO::PARAM_INT);
@@ -58,18 +66,25 @@
                     }
                     array_push($rows, $row);
                 }
-                $feedback = array(true, $rows);
+                $sql = $conn->prepare("SELECT * FROM genres");
+                $sql->execute();
+                $count = $sql->rowCount();
+                $feedback = array(true, $rows, $count);
             }else{
                 $feedback = array(false, "No records found");
             }
-        }else if($_POST["action"]=="edit-data"){
+        }else if($_POST["action"]=="edit"){
             $id = $_POST["id"];
             $title = trim($_POST["title"]);
             $sql = $conn->prepare("UPDATE genres SET title = ? WHERE id = ?");
             $sql->bindParam(1, $title, PDO::PARAM_STR);
             $sql->bindParam(2, $id, PDO::PARAM_INT);
-            $sql->execute();
-            $feedback = array(true, "Record updated successfully");
+            $feedback = sql_execute($sql, "Record updated successfully", "Couldn't update the record successfully");
+        }else if($_POST["action"]=="delete"){
+            $id = $_POST["id"];
+            $sql = $conn->prepare("DELETE FROM genres WHERE id = ?");
+            $sql->bindParam(1, $id, PDO::PARAM_INT);
+            $feedback = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }
 
         echo json_encode($feedback);
@@ -124,22 +139,8 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-record"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
-                    <div class="row g-3 justify-content-between mt-2 mb-3">
-                        <div class="col-sm-6 col-md-4">
-                            <div class="input-group">
-                                <span class="input-group-text">Sort</span>
-                                <select class="form-select">
-                                    <option>Issue</option>
-                                    <option>Due</option>
-                                    <option>Fine</option>
-                                </select>
-                                <select class="form-select">
-                                    <option>Assending</option>
-                                    <option>Decending</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="row g-3 justify-content-between mb-3">
+                        <div class="col-sm-6"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-record"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
                         <div class="col-sm-6 col-md-4">
                             <form action="#" method="post" class="input-group">
                                 <input type="text" class="form-control" placeholder="Search">
@@ -159,13 +160,7 @@
                             </tr>
                         </table>
                     </div>
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item"><a href="#" class="page-link"><i class="fa-solid fa-angles-left"></i></a></li>
-                        <li class="page-item active"><a href="#" class="page-link">1</a></li>
-                        <li class="page-item"><a href="#" class="page-link">2</a></li>
-                        <li class="page-item"><a href="#" class="page-link">3</a></li>
-                        <li class="page-item"><a href="#" class="page-link"><i class="fa-solid fa-angles-right"></i></a></li>
-                    </ul>
+                    <ul id="pagination" class="pagination justify-content-center"></ul>
                 </article>
             </main>
         </div>
@@ -222,10 +217,4 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script src="assets/public/js/genres.js"></script>
-<script>
-    $(document).ready(function(){
-        var url = window.location.href;
-        
-    })
-</script>
 </html>
