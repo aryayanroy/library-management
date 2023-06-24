@@ -20,7 +20,7 @@ $(document).ready(function(){
         ).done(function(data){
             var feedback = JSON.parse(data);
             var total_records = feedback[2];
-            var sl = (page-1)*3+1;
+            var sl = (page-1)*25+1;
             if(feedback[0]==true){
                 var rows = feedback[1];
                 for(i=0; i<rows.length; i++){
@@ -31,7 +31,7 @@ $(document).ready(function(){
                     table.append("<tr><td class='text-center'>"+(i+sl)+"</td><td>"+row[0]+"</td><td>"+row[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[2]+"' data-title='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
                 }
                 $("#records-count").html(total_records);
-                var total_pages = Math.ceil(total_records/3);
+                var total_pages = Math.ceil(total_records/25);
                 var pages = "";
                 for(i=1; i<=total_pages; i++){
                     pages += "<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";
