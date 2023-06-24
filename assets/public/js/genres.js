@@ -1,9 +1,9 @@
 $(document).ready(function(){
-    
     var url = window.location.href;
-    
-    //Load data
-    function load_data(page,search){
+    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
+
+    //load data
+    function load_data(page){
         if(!page){
             if($(".active[data-page]").data("page")){
                 page = $(".active[data-page]").data("page");
@@ -11,110 +11,120 @@ $(document).ready(function(){
                 page = 1;
             }
         }
-        var rpp = 3;
-        if(!search){
-            search = "";
-        }
+        var table = $("#data-table");
+        table.find("tr:not(:first-child)").remove();
+        table.append("<tr><td colspan='6' class='text-center'>"+loading+"</td></tr>");
         $.post(
             url,
-            {action: "load-data", page: page, rpp: rpp, search: search}
+            {action: "load-data", page: page},
         ).done(function(data){
             var feedback = JSON.parse(data);
-            $("#data-table tr:not(:first-child)").remove();
+            var total_records = feedback[2];
+            var sl = (page-1)*3+1;
             if(feedback[0]==true){
                 var rows = feedback[1];
-                var count = feedback[2];
-                var pages = Math.ceil(count/rpp);
-                var offset = (page - 1) * rpp + 1;
-                $("#records-count").html(count);
                 for(i=0; i<rows.length; i++){
-                    var genre, sub_genre = "-", action = "-";
-                    if(rows[i][2]==null){
-                        genre = rows[i][1];
-                    }else{
-                        genre = rows[i][2];
-                        sub_genre = rows[i][1];
+                    var row = rows[i];
+                    if(row[1]==null){
+                        row[1] = "-" ;
                     }
-                    if(rows[i][3]==true){
-                        action = "<button type='button' class='btn btn-danger btn-sm delete-btn' value="+rows[i][0]+"><i class='fa-solid fa-trash'></i></button>";
-                    }
-                    $("#data-table").append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+rows[i][0]+"' data-title='"+rows[i][1]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'>"+action+"</td></tr>");
+                    table.append("<tr><td class='text-center'>"+(i+sl)+"</td><td>"+row[0]+"</td><td>"+row[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[2]+"' data-title='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
                 }
-                $("#pagination>*").remove();
-                for(i=1; i<=pages; i++){
-                    $("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");
-                    $("[data-page='"+page+"']").addClass("active");
+                $("#records-count").html(total_records);
+                var total_pages = Math.ceil(total_records/3);
+                var pages = "";
+                for(i=1; i<=total_pages; i++){
+                    pages += "<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";
                 }
+                $("#pagination").html(pages);
+                $("[data-page='"+page+"']").addClass("active");
             }else{
-                $("#data-table").append("<tr><td colspan='5' class='text-center'>No records found</td></tr>")
+                table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
                 $("#records-count").html(0);
             }
+        }).always(function(){
+            table.find("tr:nth-child(2)").remove();
         })
     }
-    
+
     load_data();
 
-    //Load Genre
-    function load_genre(){
-        $("#parent-genre option:not(:first)").remove();
+    //insert modal
+    $("#insert-btn").click(function(){
+        $(".action-text").html("Add record");
+        var element = $(this);
+        var initial_text = element.html();
+        element.prop("disabled", true).html(loading);
         $.post(
             url,
             {action: "load-genre"}
         ).done(function(data){
+            var select = $("#parent-genre");
+            select.html("<option value='0'>None</option>");
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 var rows = feedback[1];
                 for(i=0; i<rows.length; i++){
-                    $("#parent-genre").append("<option value='"+rows[i][0]+"'>"+rows[i][1]+"</option>");
+                    var row = rows[i];
+                    var option = "<option value='"+row[0]+"'";
+                    if(select && select==row[0]){
+                        option += "selected";
+                    }
+                    option += ">"+row[1]+"</option>";
+                    select.append(option);
                 }
             }
+            $("#data-modal").modal("show");
+        }).always(function(){
+            element.prop("disabled", false).html(initial_text);
         })
-    }
+    })
 
-    load_genre();
-    
-    //Create
+    //insert record
     $("#data-form").submit(function(e){
         e.preventDefault();
-        $("#submit-data").prop("disabled", true).html("<i class='fas fa-spinner fa-pulse'></i>");
+        var element = $("#submit-btn");
+        var initial_text = element.html();
+        element.prop("disabled", true).html(loading);
         var form_data = $(this).serializeArray();
-        form_data.push({name: "action", value: "submit"});
+        form_data.push({name: "action", value: "insert"});
         form_data = $.param(form_data);
         $.post(
             url,
             form_data
         ).done(function(data){
+            console.log(data);
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 $("#data-form")[0].reset();
-                $("#add-record").modal("hide");
+                $("#data-modal").modal("hide");
+                load_data();
             }
             alert(feedback[1]);
-            load_data();
-            load_genre();
-        }).fail(function(){
-            alert("Unexpected error");
         }).always(function(){
-            $("#submit-data").prop("disabled", false).html("Add record");
+            element.prop("disabled", false).html(initial_text);
         })
     })
 
-    //Edit
-    $(document).on("click", ".edit-btn", function(){
-        var title = prompt("Enter the Genre title",$(this).data("title"));
+    //edit record
+    $(document).on("click",".edit-btn",function(){
+        var title = prompt("Enter the Genre title", $(this).data("title"))
         if(title){
-            var id = $(this).val();
             title = $.trim(title);
             if(title!=""){
+                var element = $(this);
+                var initial_text = element.html();
+                element.prop("disabled", true).html(loading);
+                var id = element.val();
                 $.post(
-                url,
-                {action: "edit", title: title, id: id}
+                    url,
+                    {action: "edit", title: title, id: id}
                 ).done(function(data){
                     var feedback = JSON.parse(data);
                     alert(feedback[1]);
                     load_data();
-                }).fail(function(){
-                    alert("Unexpected error");
+                }).always(function(data){
+                    element.prop("disabled", false).html(initial_text);
                 })
             }else{
                 alert("Title cannot be empty");
@@ -122,32 +132,70 @@ $(document).ready(function(){
         }
     })
 
-    //Delete
-    $(document).on("click", ".delete-btn", function(){
-        if(confirm("Do you really want to delete this record? This will also delete the book records linked to this genere.")){
-            var id = $(this).val();
+    //delete record
+    $(document).on("click",".delete-btn",function(){
+        var element = $(this);
+        var initial_text = element.html();
+        var id = element.val();
+        if(confirm("Are you sure want to delete the record? This will also delete it's subgenere.")){
+            element.prop("disabled", true).html(loading);
             $.post(
                 url,
                 {action: "delete", id: id}
             ).done(function(data){
                 var feedback = JSON.parse(data);
                 alert(feedback[1]);
-                load_data();
-            }).fail(function(){
-                alert("Unexpected error");
-            })   
+                if(feedback[0]==true){
+                    load_data();
+                }
+            }).always(function(data){
+                element.prop("disabled", false).html(initial_text);
+            })
         }
     })
 
-    //Pagination
+    //pagination
     $(document).on("click", ".page-link", function(e){
         e.preventDefault();
-        load_data($(this).data("page"), null);
+        load_data($(this).data("page"));
     })
 
-    //Search
+    //search
     $("#search-form").submit(function(e){
         e.preventDefault();
-        load_data(null, $("#search-field").val());
+        var search = $.trim($("#search-field").val());
+        if(search!=""){
+            var element = $("#search-btn");
+            var initial_text = element.html();
+            element.prop("disabled", true).html(loading);
+            $.post(
+                url,
+                {action: "search", search: search}
+            ).done(function(data){
+                var table = $("#data-table");
+                table.find("tr:not(:first-child)").remove();
+                $("#pagination>li").remove();
+                var feedback = JSON.parse(data);
+                if(feedback[0]==true){
+                    var rows = feedback[1];
+                    var count = rows.length;
+                    for(i=0; i<count; i++){
+                        var row = rows[i];
+                        if(row[1]==null){
+                            row[1] = "-" ;
+                        }
+                        table.append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+row[0]+"</td><td>"+row[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[2]+"' data-title='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+                    }
+                    $("#records-count").html(count);
+                }else{
+                    table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
+                    $("#records-count").html(0);
+                }
+            }).always(function(){
+                element.prop("disabled", false).html(initial_text);
+            })
+        }else{
+            load_data();
+        }
     })
 })

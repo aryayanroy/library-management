@@ -4,7 +4,7 @@
         header("Location: dashboard");
         die();
     }
-    if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["login"], $_POST["username"], $_POST["password"])){
+    if($_SERVER["REQUEST_METHOD"]=="POST"){
         require "config.php";
 
         $username = str_replace(" ", "", trim($_POST["username"]));
@@ -76,8 +76,16 @@
                             <input type="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
                             <label for="#">Password</label>
                         </div>
-                        <div><button type="submit" name="login" class="btn btn-primary w-100">Login</button></div>
-                        <?php if(isset($feedback)){echo "<div class='alert ".($feedback?"alert-success":"alert-danger")." mt-3'>".($feedback?"<i class='fa-regular fa-circle-check me-2'></i><span>Sucessfully logged in</span>":"<i class='fa-regular fa-circle-xmark me-2'></i><span>Invalid credentials</span>")."</div>";}?>
+                        <?php
+                            if(isset($feedback)){
+                                if($feedback){
+                                    echo "<div class='alert alert-success'><i class='fa-regular fa-circle-check me-2'></i><span>Sucessfully logged in</span></div>";
+                                }else{
+                                    echo "<div class='alert alert-danger'><i class='fa-regular fa-circle-xmark me-2'></i><span>Invalid credentials</span></div>";
+                                }
+                            }
+                        ?>
+                        <div><button type="submit" class="btn btn-primary w-100">Login</button></div>
                     </form>
                 </article>
             </main>

@@ -23,7 +23,14 @@ CREATE TABLE genres(
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   parent_genre INT,
-  FOREIGN KEY (parent_genre) REFERENCES genres(id)
+  FOREIGN KEY (parent_genre) REFERENCES genres(id) ON DELETE CASCADE
 );
 
-INSERT INTO transactions(isbn, type, amount, provider, date, receipt_number) VALUES ("978-3-16-148410-0", 1, "1112", "Hailee Steinfeld", "1998-12-11", "INV-21-12-009"), ("873-3-16-720912-5", 0, "50", "Sabrina Carpenter", "2023-06-14", "INV-12-09-315");
+CREATE TABLE books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    authors VARCHAR(255) NOT NULL,
+    isbn VARCHAR(20) UNIQUE NOT NULL,
+    genre INT NOT NULL,
+    FOREIGN KEY (genre) REFERENCES genres(id)
+);

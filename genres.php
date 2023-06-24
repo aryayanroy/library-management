@@ -13,7 +13,7 @@
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
-    if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST["action"])){
+    if($_SERVER["REQUEST_METHOD"]=="POST"){
         function sql_execute($sql, $success, $error){
             try{
                 $sql->execute();
@@ -23,71 +23,63 @@
             }
             return $feedback;
         }
-        if($_POST["action"]=="submit"){
-            $genre = trim($_POST["genre"]);
-            if($_POST["parent-genre"]==NULL){
-                $sql = $conn->prepare("INSERT INTO genres (title) VALUES (?)");
-            }else{
-                $sql = $conn->prepare("INSERT INTO genres (title, parent_genre) VALUES (?, ?)");
-                $sql->bindParam(2, $_POST["parent-genre"], PDO::PARAM_INT);
-            }
-            $sql->bindParam(1, $genre, PDO::PARAM_STR);
-            $feedback = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
-        }else if($_POST["action"]=="load-genre"){
+        $feedback =  array();
+        if($_POST["action"]=="load-genre"){     //Load genre
             $sql = $conn->prepare("SELECT id, title FROM genres");
             $sql->execute();
             if($sql->rowCount()>0){
-                $feedback = array(true, $sql->fetchAll(PDO::FETCH_NUM));
-            }else{
-                $feedback = array(false);
+                $feedback[0] = true;
+                $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
             }
-        }else if($_POST["action"]=="load-data"){
-            $offset = ($_POST["page"]-1)*$_POST["rpp"];
-            $search = "%".trim($_POST["search"])."%";
-            $sql = $conn->prepare("SELECT * FROM genres WHERE title LIKE ? LIMIT ?, ?");
-            $sql->bindParam(1, $search, PDO::PARAM_STR);
-            $sql->bindParam(2, $offset, PDO::PARAM_INT);
-            $sql->bindParam(3, $_POST["rpp"], PDO::PARAM_INT);
-            $sql->execute();
-            if($sql->rowCount()>0){
-                $rows = array();
-                while ($row = $sql->fetch(PDO::FETCH_NUM)){
-                    $sql2 = $conn->prepare("SELECT * FROM genres WHERE parent_genre = ?");
-                    $sql2->bindParam(1, $row[0], PDO::PARAM_INT);
-                    $sql2->execute();
-                    if($sql2->rowCount()==0){
-                        $row[3]=true;
-                    }else{
-                        $row[3]=false;
-                    }
-                    if($row[2]!=null){
-                        $sql2 = $conn->prepare("SELECT title FROM genres WHERE id = ?");
-                        $sql2->bindParam(1, $row[2], PDO::PARAM_INT);
-                        $sql2->execute();
-                        $row[2] = $sql2->fetch(PDO::FETCH_NUM)[0];
-                    }
-                    array_push($rows, $row);
+        }elseif($_POST["action"]=="load-data"){     //Load record
+            $offset = ($_POST["page"]-1)*3;
+            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre LIMIT ?, 3");
+            $sql->bindParam(1, $offset, PDO::PARAM_INT);
+            $feedback = sql_execute($sql, null, "Couldn't fetch records");
+            if($feedback[0] = true){
+                if($sql->rowCount()>0){
+                    $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                    $sql = $conn->prepare("SELECT COUNT(*) AS row_count FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre");
+                    $sql->execute();
+                    $feedback[2] = $sql->fetch(PDO::FETCH_NUM)[0];
+                }else{
+                    $feedback[0] = false;
+                    $feedback[1] = "No records found";
                 }
-                $sql = $conn->prepare("SELECT * FROM genres WHERE title LIKE ?");
-                $sql->bindParam(1, $search, PDO::PARAM_STR);
-                $sql->execute();
-                $count = $sql->rowCount();
-                $feedback = array(true, $rows, $count);
-            }else{
-                $feedback = array(false, "No records found");
             }
-        }else if($_POST["action"]=="edit"){
-            $id = $_POST["id"];
-            $title = trim($_POST["title"]);
-            $sql = $conn->prepare("UPDATE genres SET title = ? WHERE id = ?");
+        }elseif($_POST["action"]=="insert"){    //Insert record
+            $title = trim($_POST["genre"]);
+            if($_POST["parent-genre"]==0){
+                $parent_genre = null;
+            }else{
+                $parent_genre = $_POST["parent-genre"];
+            }
+            $sql = $conn->prepare("INSERT INTO genres (title, parent_genre) VALUES (?, ?)");
             $sql->bindParam(1, $title, PDO::PARAM_STR);
-            $sql->bindParam(2, $id, PDO::PARAM_INT);
-            $feedback = sql_execute($sql, "Record updated successfully", "Couldn't update the record successfully");
-        }else if($_POST["action"]=="delete"){
-            $id = $_POST["id"];
+            $sql->bindParam(2, $parent_genre, PDO::PARAM_INT);
+            $feedback = sql_execute($sql, "Data recorded successfully", "Couldn't record data");
+        }elseif($_POST["action"]=="edit"){  //Edit record
+            $sql = $conn->prepare("UPDATE genres SET title = ? WHERE id = ?");
+            $sql->bindParam(1, $_POST["title"], PDO::PARAM_STR);
+            $sql->bindParam(2, $_POST["id"], PDO::PARAM_INT);
+            $feedback = sql_execute($sql, "Record updated successfully", "Couldn't update the record");
+        }elseif($_POST["action"]=="delete"){    //Delete record
             $sql = $conn->prepare("DELETE FROM genres WHERE id = ?");
-            $sql->bindParam(1, $id, PDO::PARAM_INT);
+            $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
             $feedback = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
+        }elseif($_POST["action"]=="search"){
+            $search = "%".$_POST["search"]."%";
+            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre WHERE parent.title LIKE ?");
+            $sql->bindParam(1, $search, PDO::PARAM_STR);
+            $feedback = sql_execute($sql, null, "Couldn't fetch records");
+            if($feedback[0]==true){
+                if($sql->rowCount()>0){
+                    $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                }else{
+                    $feedback[0] = false;
+                    $feedback[1] = "No records found for: ".$search;
+                }
+            }
         }
         echo json_encode($feedback);
         die();
@@ -111,8 +103,8 @@
 <body>
     <div class="container-xxl">
         <div class="row">
-            <aside class="d-none d-md-block col-3 col-xl-2 min-vh-100 border-end">
-                <div class="py-3 d-flex flex-column sticky-top h-100">
+            <aside class="d-none d-md-block col-3 col-xl-2 sticky-top vh-100 border-end">
+                <div class="py-3 d-flex flex-column h-100">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 64" width=50 class="mx-auto"><path d="M55 26.5v23.8c0 1.2-.4 2.2-1.3 3.2-.9.9-1.9 1.5-3.2 1.6-3.5.4-6.8 1.3-10.1 2.6S34 60.8 31 62.9a6.06 6.06 0 0 1-3.5 1.1 6.06 6.06 0 0 1-3.5-1.1c-3-2.1-6.1-3.9-9.4-5.2s-6.7-2.2-10.1-2.6c-1.3-.2-2.3-.7-3.2-1.6-.9-1-1.3-2-1.3-3.2V26.5c0-1.3.5-2.4 1.4-3.2s2-1.2 3.1-1c4 .6 8 2 11.9 4 3.9 2.1 7.6 4.8 11.1 8.1 3.5-3.3 7.2-6 11.1-8.1s7.9-3.4 11.9-4c1.2-.2 2.2.1 3.1 1 .9.8 1.4 1.9 1.4 3.2z" fill="#004d40"/><path d="M39.5 11.8c0 3.3-1.1 6.1-3.4 8.4s-5.1 3.4-8.4 3.4-6.1-1.1-8.4-3.4-3.4-5.1-3.4-8.4 1.1-6.1 3.4-8.4S24.4 0 27.7 0s6.1 1.1 8.4 3.4 3.4 5.1 3.4 8.4z" fill="#e65100"/></svg>
                     <hr>
                     <nav class="nav nav-pills flex-column flex-grow-1">
@@ -142,11 +134,11 @@
                 </header>
                 <article class="container-fluid py-3">
                     <div class="row g-3 justify-content-between mb-3">
-                        <div class="col-sm-6"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-record"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
+                        <div class="col-sm-6"><button type="button" id="insert-btn" class="btn btn-primary"><i class="fa-solid fa-plus me-2"></i><span>Add Genre</span></button></div>
                         <div class="col-sm-6 col-md-4">
                             <form action="#" method="post" id="search-form" class="input-group">
                                 <input type="text" id="search-field" class="form-control" placeholder="Search" spellcheck="false" autocomplete="off">
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                <button type="submit" id="search-btn" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
                             </form>
                         </div>
                     </div>
@@ -188,11 +180,11 @@
             <a href="logout" class="btn btn-light w-100">Logout</a>
         </div>
     </aside>
-    <div id="add-record" class="modal fade">
+    <div id="data-modal" class="modal fade">
         <div class="modal-dialog modal-fullscreen-sm-down">
             <form action="#" method="post" id="data-form" class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Genre</h5>
+                    <h5 class="modal-title action-text"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -200,7 +192,6 @@
                         <div class="col-sm-6">
                             <label for="parent-genre" class="form-label">Parent Genre</label>
                             <select id="parent-genre" name="parent-genre" class="form-select">
-                                <option value="">None</option>
                             </select>
                         </div>
                         <div class="col-sm-6">
@@ -210,7 +201,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" id="submit-data" class="btn btn-primary">Add genre</button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary action-text"></button>
                 </div>
             </form>
         </div>
@@ -219,6 +210,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script>
-$(document).ready(function(){var t=window.location.href;function e(e,a){e||(e=$(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1),a||(a=""),$.post(t,{action:"load-data",page:e,rpp:3,search:a}).done(function(t){var a=JSON.parse(t);if($("#data-table tr:not(:first-child)").remove(),!0==a[0]){var n=a[1],o=a[2],r=Math.ceil(o/3),d=(e-1)*3+1;for($("#records-count").html(o),i=0;i<n.length;i++){var l,s="-",c="-";null==n[i][2]?l=n[i][1]:(l=n[i][2],s=n[i][1]),!0==n[i][3]&&(c="<button type='button' class='btn btn-danger btn-sm delete-btn' value="+n[i][0]+"><i class='fa-solid fa-trash'></i></button>"),$("#data-table").append("<tr><td class='text-center'>"+(i+d)+"</td><td>"+l+"</td><td>"+s+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+n[i][0]+"' data-title='"+n[i][1]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'>"+c+"</td></tr>")}for($("#pagination>*").remove(),i=1;i<=r;i++)$("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>"),$("[data-page='"+e+"']").addClass("active")}else $("#data-table").append("<tr><td colspan='5' class='text-center'>No records found</td></tr>"),$("#records-count").html(0)})}function a(){$("#parent-genre option:not(:first)").remove(),$.post(t,{action:"load-genre"}).done(function(t){var e=JSON.parse(t);if(!0==e[0]){var a=e[1];for(i=0;i<a.length;i++)$("#parent-genre").append("<option value='"+a[i][0]+"'>"+a[i][1]+"</option>")}})}e(),a(),$("#data-form").submit(function(n){n.preventDefault(),$("#submit-data").prop("disabled",!0).html("<i class='fas fa-spinner fa-pulse'></i>");var o=$(this).serializeArray();o.push({name:"action",value:"submit"}),o=$.param(o),$.post(t,o).done(function(t){var n=JSON.parse(t);!0==n[0]&&($("#data-form")[0].reset(),$("#add-record").modal("hide")),alert(n[1]),e(),a()}).fail(function(){alert("Unexpected error")}).always(function(){$("#submit-data").prop("disabled",!1).html("Add record")})}),$(document).on("click",".edit-btn",function(){var a=prompt("Enter the Genre title",$(this).data("title"));if(a){var n=$(this).val();""!=(a=$.trim(a))?$.post(t,{action:"edit",title:a,id:n}).done(function(t){alert(JSON.parse(t)[1]),e()}).fail(function(){alert("Unexpected error")}):alert("Title cannot be empty")}}),$(document).on("click",".delete-btn",function(){if(confirm("Do you really want to delete this record? This will also delete the book records linked to this genere.")){var a=$(this).val();$.post(t,{action:"delete",id:a}).done(function(t){alert(JSON.parse(t)[1]),e()}).fail(function(){alert("Unexpected error")})}}),$(document).on("click",".page-link",function(t){t.preventDefault(),e($(this).data("page"),null)}),$("#search-form").submit(function(t){t.preventDefault(),e(null,$("#search-field").val())})});
+    $(document).ready(function(){var l=window.location.href,o="<i class='fas fa-circle-notch fa-spin fa-xl'></i>";function d(r){r=r||($(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1);var s=$("#data-table");s.find("tr:not(:first-child)").remove(),s.append("<tr><td colspan='6' class='text-center'>"+o+"</td></tr>"),$.post(l,{action:"load-data",page:r}).done(function(t){var a=JSON.parse(t),t=a[2],e=3*(r-1)+1;if(1==a[0]){var n=a[1];for(i=0;i<n.length;i++){var l=n[i];null==l[1]&&(l[1]="-"),s.append("<tr><td class='text-center'>"+(i+e)+"</td><td>"+l[0]+"</td><td>"+l[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+l[2]+"' data-title='"+l[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+l[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>")}$("#records-count").html(t);var o=Math.ceil(t/3),d="";for(i=1;i<=o;i++)d+="<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";$("#pagination").html(d),$("[data-page='"+r+"']").addClass("active")}else s.append("<tr><td colspan='5' class='text-center'>"+a[1]+"</td></tr>"),$("#records-count").html(0)}).always(function(){s.find("tr:nth-child(2)").remove()})}d(),$("#insert-btn").click(function(){$(".action-text").html("Add record");var t=$(this),a=t.html();t.prop("disabled",!0).html(o),$.post(l,{action:"load-genre"}).done(function(t){var a=$("#parent-genre");a.html("<option value='0'>None</option>");t=JSON.parse(t);if(1==t[0]){var e=t[1];for(i=0;i<e.length;i++){var n=e[i],l="<option value='"+n[0]+"'";a&&a==n[0]&&(l+="selected"),l+=">"+n[1]+"</option>",a.append(l)}}$("#data-modal").modal("show")}).always(function(){t.prop("disabled",!1).html(a)})}),$("#data-form").submit(function(t){t.preventDefault();var a=$("#submit-btn"),e=a.html();a.prop("disabled",!0).html(o);t=$(this).serializeArray();t.push({name:"action",value:"insert"}),t=$.param(t),$.post(l,t).done(function(t){console.log(t);t=JSON.parse(t);1==t[0]&&($("#data-form")[0].reset(),$("#data-modal").modal("hide"),d()),alert(t[1])}).always(function(){a.prop("disabled",!1).html(e)})}),$(document).on("click",".edit-btn",function(){var a,e,t,n=prompt("Enter the Genre title",$(this).data("title"));n&&(""!=(n=$.trim(n))?(a=$(this),e=a.html(),a.prop("disabled",!0).html(o),t=a.val(),$.post(l,{action:"edit",title:n,id:t}).done(function(t){t=JSON.parse(t);alert(t[1]),d()}).always(function(t){a.prop("disabled",!1).html(e)})):alert("Title cannot be empty"))}),$(document).on("click",".delete-btn",function(){var a=$(this),e=a.html(),t=a.val();confirm("Are you sure want to delete the record? This will also delete it's subgenere.")&&(a.prop("disabled",!0).html(o),$.post(l,{action:"delete",id:t}).done(function(t){t=JSON.parse(t);alert(t[1]),1==t[0]&&d()}).always(function(t){a.prop("disabled",!1).html(e)}))}),$(document).on("click",".page-link",function(t){t.preventDefault(),d($(this).data("page"))}),$("#search-form").submit(function(t){t.preventDefault();var a,e,t=$.trim($("#search-field").val());""!=t?(a=$("#search-btn"),e=a.html(),a.prop("disabled",!0).html(o),$.post(l,{action:"search",search:t}).done(function(t){var a=$("#data-table");a.find("tr:not(:first-child)").remove(),$("#pagination>li").remove();t=JSON.parse(t);if(1==t[0]){var e=t[1],n=e.length;for(i=0;i<n;i++){var l=e[i];null==l[1]&&(l[1]="-"),a.append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+l[0]+"</td><td>"+l[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+l[2]+"' data-title='"+l[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+l[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>")}$("#records-count").html(n)}else a.append("<tr><td colspan='5' class='text-center'>"+t[1]+"</td></tr>"),$("#records-count").html(0)}).always(function(){a.prop("disabled",!1).html(e)})):d()})});
 </script>
 </html>
