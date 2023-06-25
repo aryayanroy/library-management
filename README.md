@@ -32,5 +32,5 @@ CREATE TABLE books (
     authors VARCHAR(255) NOT NULL,
     isbn VARCHAR(20) UNIQUE NOT NULL,
     genre INT NOT NULL,
-    FOREIGN KEY (genre) REFERENCES genres(id)
+    FOREIGN KEY (genre) REFERENCES genres(id) ON DELETE CASCADE
 );

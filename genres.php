@@ -23,28 +23,29 @@
             }
             return $feedback;
         }
-        $feedback =  array();
+        $output =  array();
         if($_POST["action"]=="load-genre"){     //Load genre
             $sql = $conn->prepare("SELECT id, title FROM genres");
             $sql->execute();
             if($sql->rowCount()>0){
-                $feedback[0] = true;
-                $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                $output[0] = true;
+                $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
             }
         }elseif($_POST["action"]=="load-data"){     //Load record
             $offset = ($_POST["page"]-1)*25;
-            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre LIMIT ?, 25");
+            $statement = " AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre";
+            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id".$statement." LIMIT ?, 25");
             $sql->bindParam(1, $offset, PDO::PARAM_INT);
-            $feedback = sql_execute($sql, null, "Couldn't fetch records");
-            if($feedback[0] = true){
+            $output = sql_execute($sql, null, "Couldn't fetch records");
+            if($output[0] = true){
                 if($sql->rowCount()>0){
-                    $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
-                    $sql = $conn->prepare("SELECT COUNT(*) AS row_count FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre");
+                    $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                    $sql = $conn->prepare("SELECT COUNT(*)".$statement);
                     $sql->execute();
                     $feedback[2] = $sql->fetch(PDO::FETCH_NUM)[0];
                 }else{
-                    $feedback[0] = false;
-                    $feedback[1] = "No records found";
+                    $output[0] = false;
+                    $output[1] = "No records found";
                 }
             }
         }elseif($_POST["action"]=="insert"){    //Insert record
@@ -57,31 +58,31 @@
             $sql = $conn->prepare("INSERT INTO genres (title, parent_genre) VALUES (?, ?)");
             $sql->bindParam(1, $title, PDO::PARAM_STR);
             $sql->bindParam(2, $parent_genre, PDO::PARAM_INT);
-            $feedback = sql_execute($sql, "Data recorded successfully", "Couldn't record data");
+            $output = sql_execute($sql, "Data recorded successfully", "Couldn't record data");
         }elseif($_POST["action"]=="edit"){  //Edit record
             $sql = $conn->prepare("UPDATE genres SET title = ? WHERE id = ?");
             $sql->bindParam(1, $_POST["title"], PDO::PARAM_STR);
             $sql->bindParam(2, $_POST["id"], PDO::PARAM_INT);
-            $feedback = sql_execute($sql, "Record updated successfully", "Couldn't update the record");
+            $output = sql_execute($sql, "Record updated successfully", "Couldn't update the record");
         }elseif($_POST["action"]=="delete"){    //Delete record
             $sql = $conn->prepare("DELETE FROM genres WHERE id = ?");
             $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
-            $feedback = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
+            $output = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }elseif($_POST["action"]=="search"){
             $search = "%".$_POST["search"]."%";
             $sql = $conn->prepare("SELECT parent.title, child.title, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre WHERE parent.title LIKE ?");
             $sql->bindParam(1, $search, PDO::PARAM_STR);
-            $feedback = sql_execute($sql, null, "Couldn't fetch records");
-            if($feedback[0]==true){
+            $output = sql_execute($sql, null, "Couldn't fetch records");
+            if($output[0]==true){
                 if($sql->rowCount()>0){
-                    $feedback[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                    $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
                 }else{
-                    $feedback[0] = false;
-                    $feedback[1] = "No records found for: ".$_POST["search"];
+                    $output[0] = false;
+                    $output[1] = "No records found for: ".$_POST["search"];
                 }
             }
         }
-        echo json_encode($feedback);
+        echo json_encode($output);
         die();
     }
 ?>

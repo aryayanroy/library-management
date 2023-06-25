@@ -93,7 +93,6 @@ $(document).ready(function(){
             url,
             form_data
         ).done(function(data){
-            console.log(data);
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 $("#data-form")[0].reset();

@@ -1,89 +1,93 @@
-$(document).ready(function(){
-    var url = window.location.href;
-        
-    function load_data(page, search){
-        if(!page){
-            if($(".active[data-page]").data("page")){
-                page = $(".active[data-page]").data("page");
-            }else{
-                page = 1;
-            }
-        }
-        var rpp = 3;
-        if(!search){
-            search = "";
-        }
-        $.post(
-            url,
-            {action: "load-data", page: page, rpp: rpp, search: search}
-        ).done(function(data){
-            console.log(data);
-            var feedback = JSON.parse(data);
-            $("#data-table tr:not(:first-child)").remove();
-            if(feedback[0]==true){
-                console.log(feedback[3]);
-                var rows = feedback[1];
-                var count = feedback[2];
-                var pages = Math.ceil(count/rpp);
-                var offset = (page - 1) * rpp + 1;
-                $("#records-count").html(count);
-                for(i=0; i<rows.length; i++){
-                    var row = rows[i];
-                    $("#data-table").append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+row[1]+"</td><td>"+row[2]+"</td><td class='text-nowrap'>"+row[3]+"</td><td></td><td class='text-nowrap'>"+row[4]+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm' value='"+row[0]+"'><i class='fa-solid fa-trash'></i></button></td></tr>");
+function data_modal(title, button, select, id){
+    $.post(
+        url,
+        {action: "load-genre"}
+    ).done(function(data){
+        var select = $("#genre");
+        select.html("<option value='' selected>None</option>");
+        var feedback = JSON.parse(data);
+        if(feedback[0]==true){
+            var rows = feedback[1];
+            for(i=0; i<rows.length; i++){
+                var row = rows[i];
+                var option = "<option value='"+row[0]+"'";
+                if(select && select==row[0]){
+                    option += "selected";
                 }
-                $("#pagination>*").remove();
-                for(i=1; i<=pages; i++){
-                    $("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");
-                    $("[data-page='"+page+"']").addClass("active");
-                }
-            }else{
-                $("#data-table").append("<tr><td colspan='5' class='text-center'>No records found</td></tr>")
-                $("#records-count").html(0);
+                option += ">"+row[1]+"</option>";
+                select.append(option);
             }
-        })
-    }
-
-    load_data();
-
-    $("#data-form").submit(function(e){
-        e.preventDefault();
-        $("#submit-data").prop("disabled", true).html("<i class='fas fa-spinner fa-pulse'></i>");
-        var id = $("#submit-data[data-id]").data("id");
-        var type = $("#submit-data[data-type]").data("type");
-        var form_data = $(this).serializeArray();
-        if(type == "insert"){
-            form_data.push({name: "action", value: "insert"});
-        }else if(type == "update"){
-            form_data.push({name: "action", value: "update"}, {name: "id", value: id});
         }
-        form_data = $.param(form_data);
-        $.post(
-            url,
-            form_data
-        ).done(function(data){
-            console.log(data);
-            var feedback = JSON.parse(data);
-            if(feedback[0]==true){
-                $("#submit-modal").modal("hide");
+        $(".action-title").html(title);
+        $("#submit-btn").html(button);
+        $("#data-modal").modal("show");
+    })
+}
+
+function load_data(){
+    var table = $("#data-table");
+    table.find("tr:not(:first-child)").remove();
+    $.post(
+        url,
+        {action: "load-data"}
+    ).done(function(data){
+        var feedback = JSON.parse(data);
+        if(feedback[0]==true){
+            var rows = feedback[1];
+            for(i=0; i<rows.length; i++){
+                var row = rows[i];
+                table.append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+row[1]+"</td><td>"+row[2]+"</td><td class='text-nowrap'>"+row[3]+"</td><td></td><td class='text-nowrap'>"+row[4]+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[0]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
             }
+        }else{
             alert(feedback[1]);
-            load_data();
-        }).fail(function(){
-            alert("Unexpected error");
-        }).always(function(){
-            $("#submit-data").prop("disabled", false).html("Add record");
-        })
+        }
     })
+}
 
-    //Pagination
-    $(document).on("click", ".page-link", function(e){
-        e.preventDefault();
-        load_data($(this).data("page"), null);
-    })
+load_data();
 
-    //Search
-    $("#search-form").submit(function(e){
-        e.preventDefault();
-        load_data(null, $("#search-field").val());
+$("#insert-btn").click(function(){
+    $.post(
+        url,
+        {action: "load-genre"}
+    ).done(function(data){
+        var select = $("#genre");
+        select.html("<option value='0'>None</option>");
+        var feedback = JSON.parse(data);
+        if(feedback[0]==true){
+            var rows = feedback[1];
+            for(i=0; i<rows.length; i++){
+                var row = rows[i];
+                var option = "<option value='"+row[0]+"'";
+                if(select && select==row[0]){
+                    option += "selected";
+                }
+                option += ">"+row[1]+"</option>";
+                select.append(option);
+            }
+        }
+        data_modal("New Book record","Add record");
     })
+})
+
+$("#data-form").submit(function(e){
+    e.preventDefault();
+    var form_data = $(this).serializeArray();
+    form_data.push({name: "action", value: "insert"});
+    form_data = $.param(form_data);
+    $.post(
+        url,
+        form_data
+    ).done(function(data){
+        var feedback = JSON.parse(data);
+        if(feedback[0]==true){
+            $("#data-form")[0].reset();
+            $("#data-modal").modal("hide");
+        }
+        alert(feedback[1]);
+    })
+})
+
+$(document).on("click", ".edit-btn", function(){
+    data_modal("Update Book record","Update record");
 })
