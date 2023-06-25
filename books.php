@@ -23,8 +23,10 @@
             }
             return $feedback;
         }
-
         $output = array();
+        if(in_array($_POST["action"], ["load-data", "search"])){
+            $statement = "WITH RECURSIVE genre_hierarchy AS (SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
+        }
         if($_POST["action"]=="load-genre"){     //Load genre
             $sql = $conn->prepare("SELECT id, title FROM genres ORDER BY title");
             $sql->execute();
@@ -32,16 +34,9 @@
                 $output[0] = true;
                 $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
             }
-        }elseif($_POST["action"]=="insert"){    //Insert record
-            $sql = $conn->prepare("INSERT INTO books (title, authors, isbn, genre) VALUES (?, ?, ?, ?)");
-            $sql->bindParam(1, $_POST["title"], PDO::PARAM_STR);
-            $sql->bindParam(2, $_POST["authors"], PDO::PARAM_STR);
-            $sql->bindParam(3, $_POST["isbn"], PDO::PARAM_STR);
-            $sql->bindParam(4, $_POST["genre"], PDO::PARAM_INT);
-            $output = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
         }elseif($_POST["action"]=="load-data"){     //Load data
             $offset = ($_POST["page"]-1)*25;
-            $sql = $conn->prepare("WITH RECURSIVE genre_hierarchy AS (SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id LIMIT ?, 25");
+            $sql = $conn->prepare($statement."LIMIT ?, 25");
             $sql->bindParam(1, $offset, PDO::PARAM_INT);
             $output = sql_execute($sql, null, "Couldn't fetch records");
             if($output[0] = true){
@@ -62,6 +57,13 @@
                     $output[1] = "No records found";
                 }
             }
+        }elseif($_POST["action"]=="insert"){    //Insert record
+            $sql = $conn->prepare("INSERT INTO books (title, authors, isbn, genre) VALUES (?, ?, ?, ?)");
+            $sql->bindParam(1, $_POST["title"], PDO::PARAM_STR);
+            $sql->bindParam(2, $_POST["authors"], PDO::PARAM_STR);
+            $sql->bindParam(3, $_POST["isbn"], PDO::PARAM_STR);
+            $sql->bindParam(4, $_POST["genre"], PDO::PARAM_INT);
+            $output = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
         }elseif($_POST["action"]=="load-edit"){
             $sql = $conn->prepare("SELECT * FROM books WHERE id = ?");
             $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
@@ -77,8 +79,31 @@
             $sql->bindParam(4, $_POST["genre"], PDO::PARAM_INT);
             $sql->bindParam(5, $_POST["id"], PDO::PARAM_INT);
             $output = sql_execute($sql, "Record updated successfully", "Couldn't update the record");
+        }elseif($_POST["action"]=="delete"){
+            $sql = $conn->prepare("DELETE FROM books WHERE id = ?");
+            $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
+            $output = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
+        }elseif($_POST["action"]=="search"){
+            $search = "%".$_POST["search"]."%";
+            $sql = $conn->prepare($statement."WHERE CONCAT(b.title,b.authors,b.isbn) LIKE ?");
+            $sql->bindParam(1, $search, PDO::PARAM_STR);
+            $output = sql_execute($sql, null, "Couldn't fetch records");
+            if($output[0]==true){
+                if($sql->rowCount()>0){
+                    $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                    foreach($output[1] as &$row){
+                        $genres = explode(",", $row[4]);
+                        foreach($genres as &$genre){
+                            $genre = strtoupper(substr($genre, 0, 3));
+                        }
+                        $row[4] = implode("-", $genres);
+                    }
+                }else{
+                    $output[0] = false;
+                    $output[1] = "No records found for: ".$_POST["search"];
+                }
+            }
         }
-        
         echo json_encode($output);
         die();
     }
@@ -136,7 +161,7 @@
                         <div class="col-sm-6 col-md-4">
                             <form action="#" method="post" id="search-form" class="input-group">
                                 <input type="text" id="search-field" class="form-control" placeholder="Search" spellcheck="false" autocomplete="off">
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                <button type="submit" id="search-btn" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
                             </form>
                         </div>
                     </div>
@@ -146,7 +171,7 @@
                             <tr>
                                 <th>Sl</th>
                                 <th>Title</th>
-                                <th>Author</th>
+                                <th>Author(s)</th>
                                 <th>ISBN</th>
                                 <th>Availability</th>
                                 <th>Call Number</th>
@@ -218,131 +243,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script>
-    $(document).ready(function(){
-        var url = window.location.href;
-
-        function load_data(page){
-            if(!page){
-                if($(".active[data-page]").data("page")){
-                    page = $(".active[data-page]").data("page");
-                }else{
-                    page = 1;
-                }
-            }
-            var table = $("#data-table");
-            table.find("tr:not(:first-child)").remove();
-            $.post(
-                url,
-                {action: "load-data", page: page}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                var total_records = feedback[2];
-                var sl = (page-1)*25+1;
-                if(feedback[0]==true){
-                    var rows = feedback[1];
-                    for(i=0; i<rows.length; i++){
-                        var row = rows[i];
-                        if(row[1]==null){
-                            row[1] = "-" ;
-                        }
-                        table.append("<tr><td class='text-center'>"+(i+sl)+"</td><td>"+row[1]+"</td><td>"+row[2]+"</td><td class='text-nowrap'>"+row[3]+"</td><td></td><td class='text-nowrap'>"+row[4]+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[0]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
-                    }
-                    $("#records-count").html(total_records);
-                    var total_pages = Math.ceil(total_records/25);
-                    var pages = "";
-                    for(i=1; i<=total_pages; i++){
-                        pages += "<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";
-                    }
-                    $("#pagination").html(pages);
-                    $("[data-page='"+page+"']").addClass("active");
-                }else{
-                    table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
-                    $("#records-count").html(0);
-                }
-            })
-        }
-
-        load_data();
-
-        //data modal
-        function data_modal(action, title, button, selected){
-            $.post(
-                url,
-                {action: "load-genre"}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                if(feedback[0]==true){
-                    var select = $("#genre");
-                    select.find("option").remove();
-                    if(action=="insert"){
-                        select.append("<option value=''>-select-</option>");
-                    }
-                    var rows = feedback[1];
-                    for(i=0; i<rows.length; i++){
-                        var row = rows[i];
-                        var option = "<option value='"+row[0]+"'>"+row[1]+"</option>";
-                        select.append(option);
-                    }
-                    $("#genre option[value="+selected+"]").prop("selected", true);
-                }else{
-                    alert(feedback[1]);
-                }
-            })
-            $(".action-title").html(title);
-            $("#submit-btn").html(button).data("action",action);
-            $("#data-modal").modal("show");
-        }
-
-        $("#insert-btn").click(function(){
-            $("#data-form")[0].reset();
-            data_modal("insert","New record","Add record");
-        })
-
-        $(document).on("click",".edit-btn", function(){
-            var id = $(this).val();
-            $.post(
-                url,
-                {action: "load-edit", id: id}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                data_modal("update","Edit record","Update", feedback[4]);
-                $("#submit-btn").data("id",feedback[0]);
-                $("#isbn").val(feedback[3]);
-                $("#title").val(feedback[1]);
-                $("#authors").val(feedback[2]);
-            })
-        })
-
-        $("#data-form").submit(function(e){
-            e.preventDefault();
-            var button = $("#submit-btn");
-            var action = button.data("action");
-            var form_data = $(this).serializeArray();
-            form_data.push({name: "action", value: action});
-            if(action=="update"){
-                form_data.push({name: "id", value: button.data("id")});
-            }
-            form_data = $.param(form_data);
-            $.post(
-                url,
-                form_data
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                if(feedback[0]==true){
-                    $("#data-form")[0].reset();
-                    $("#data-modal").modal("hide");
-                    load_data();
-                }
-                alert(feedback[1]);
-            })
-        })
-
-        //pagination
-        $(document).on("click", ".page-link", function(e){
-            e.preventDefault();
-            load_data($(this).data("page"));
-        })
-        
-    })
+$(document).ready(function(){var c=window.location.href,p="<i class='fas fa-circle-notch fa-spin fa-xl'></i>";function u(t,a,e,n,o,d,l){t.append("<tr><td class='text-center'>"+(i+a)+"</td><td>"+e+"</td><td>"+n+"</td><td class='text-nowrap'>"+o+"</td><td></td><td class='text-nowrap'>"+d+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+l+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+l+"><i class='fa-solid fa-trash'></i></button></td></tr>")}function o(r){r=r||($(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1);var s=$("#data-table");s.find("tr:not(:first-child)").remove(),s.append("<tr><td colspan='7' class='text-center'>"+p+"</td></tr>"),$.post(c,{action:"load-data",page:r}).always(function(){s.find("tr:nth-child(2)").remove()}).done(function(t){var a=JSON.parse(t),t=a[2],e=25*(r-1)+1;if(1==a[0]){var n=a[1];for(i=0;i<n.length;i++){var o=n[i];u(s,e,o[1],o[2],o[3],o[4],o[0])}$("#records-count").html(t);var d=Math.ceil(t/25),l="";for(i=1;i<=d;i++)l+="<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";$("#pagination").html(l),$("[data-page='"+r+"']").addClass("active")}else s.append("<tr><td colspan='7' class='text-center'>"+a[1]+"</td></tr>"),$("#records-count").html(0)})}function n(t,o,d,l,r){var a=t.html();t.prop("disabled",!0).html(p),$.post(c,{action:"load-genre"}).always(function(){t.prop("disabled",!1).html(a)}).done(function(t){t=JSON.parse(t);if(1==t[0]){var a=$("#genre");a.find("option").remove(),"insert"==o&&a.append("<option value=''>-select-</option>");var e=t[1];for(i=0;i<e.length;i++){var n=e[i],n="<option value='"+n[0]+"'>"+n[1]+"</option>";a.append(n)}$("#genre option[value="+r+"]").prop("selected",!0),$(".action-title").html(d),$("#submit-btn").html(l).data("action",o),$("#data-modal").modal("show")}else alert(t[1])})}o(),$(document).on("click",".page-link",function(t){t.preventDefault(),o($(this).data("page"))}),$("#insert-btn").click(function(){$("#data-form")[0].reset(),n($(this),"insert","New record","Add record")}),$(document).on("click",".edit-btn",function(){var a=$(this),t=a.html();a.prop("disabled",!0).html(p);var e=a.val();$.post(c,{action:"load-edit",id:e}).always(function(){a.prop("disabled",!1).html(t)}).done(function(t){t=JSON.parse(t);n(a,"update","Edit record","Update",t[4]),$("#submit-btn").data("id",t[0]),$("#isbn").val(t[3]),$("#title").val(t[1]),$("#authors").val(t[2])})}),$("#data-form").submit(function(t){t.preventDefault();var a=$("#submit-btn"),e=a.html();a.prop("disabled",!0).html(p);var n=a.data("action"),t=$(this).serializeArray();t.push({name:"action",value:n}),"update"==n&&t.push({name:"id",value:a.data("id")}),t=$.param(t),$.post(c,t).always(function(){a.prop("disabled",!1).html(e)}).done(function(t){t=JSON.parse(t);1==t[0]&&($("#data-form")[0].reset(),$("#data-modal").modal("hide"),o()),alert(t[1])})}),$(document).on("click",".delete-btn",function(){var t=$(this),a=t.html(),e=t.val();confirm("Are you sure want to delete the record? This will also delete it's all related records.")&&(t.prop("disabled",!0).html(p),$.post(c,{action:"delete",id:e}).always(function(){t.prop("disabled",!1).html(a)}).done(function(t){t=JSON.parse(t);alert(t[1]),1==t[0]&&o()}))}),$("#search-form").submit(function(t){t.preventDefault();var a,e,t=$.trim($("#search-field").val());""!=t?(a=$("#search-btn"),e=a.html(),a.prop("disabled",!0).html(p),$.post(c,{action:"search",search:t}).done(function(t){var a=$("#data-table");a.find("tr:not(:first-child)").remove();t=JSON.parse(t);if(1==t[0]){var e=t[1],n=e.length;for(i=0;i<n;i++){var o=e[i];u(a,1,o[1],o[2],o[3],o[4],o[0])}$("#records-count").html(n)}else a.append("<tr><td colspan='7' class='text-center'>"+t[1]+"</td></tr>"),$("#records-count").html(0)}).always(function(){a.prop("disabled",!1).html(e)})):o()})});
 </script>
 </html>

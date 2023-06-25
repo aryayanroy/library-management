@@ -2,6 +2,10 @@ $(document).ready(function(){
     var url = window.location.href;
     var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
 
+    function append(table, offset, genre, sub_genre, id){
+        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+id+"' data-title='"+genre+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+id+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+    }
+
     //load data
     function load_data(page){
         if(!page){
@@ -17,10 +21,12 @@ $(document).ready(function(){
         $.post(
             url,
             {action: "load-data", page: page},
-        ).done(function(data){
+        ).always(function(){
+            table.find("tr:nth-child(2)").remove();
+        }).done(function(data){
             var feedback = JSON.parse(data);
             var total_records = feedback[2];
-            var sl = (page-1)*25+1;
+            var offset = (page-1)*25+1;
             if(feedback[0]==true){
                 var rows = feedback[1];
                 for(i=0; i<rows.length; i++){
@@ -28,7 +34,7 @@ $(document).ready(function(){
                     if(row[1]==null){
                         row[1] = "-" ;
                     }
-                    table.append("<tr><td class='text-center'>"+(i+sl)+"</td><td>"+row[0]+"</td><td>"+row[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[2]+"' data-title='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+                    append(table, offset, row[0], row[1], row[2]);
                 }
                 $("#records-count").html(total_records);
                 var total_pages = Math.ceil(total_records/25);
@@ -42,12 +48,16 @@ $(document).ready(function(){
                 table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
                 $("#records-count").html(0);
             }
-        }).always(function(){
-            table.find("tr:nth-child(2)").remove();
         })
     }
 
     load_data();
+
+    //pagination
+    $(document).on("click", ".page-link", function(e){
+        e.preventDefault();
+        load_data($(this).data("page"));
+    })
 
     //insert modal
     $("#insert-btn").click(function(){
@@ -58,7 +68,9 @@ $(document).ready(function(){
         $.post(
             url,
             {action: "load-genre"}
-        ).done(function(data){
+        ).always(function(){
+            element.prop("disabled", false).html(initial_text);
+        }).done(function(data){
             var select = $("#parent-genre");
             select.html("<option value='0'>None</option>");
             var feedback = JSON.parse(data);
@@ -75,8 +87,6 @@ $(document).ready(function(){
                 }
             }
             $("#data-modal").modal("show");
-        }).always(function(){
-            element.prop("disabled", false).html(initial_text);
         })
     })
 
@@ -92,7 +102,9 @@ $(document).ready(function(){
         $.post(
             url,
             form_data
-        ).done(function(data){
+        ).always(function(){
+            element.prop("disabled", false).html(initial_text);
+        }).done(function(data){
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 $("#data-form")[0].reset();
@@ -100,8 +112,6 @@ $(document).ready(function(){
                 load_data();
             }
             alert(feedback[1]);
-        }).always(function(){
-            element.prop("disabled", false).html(initial_text);
         })
     })
 
@@ -118,12 +128,12 @@ $(document).ready(function(){
                 $.post(
                     url,
                     {action: "edit", title: title, id: id}
-                ).done(function(data){
+                ).always(function(){
+                    element.prop("disabled", false).html(initial_text);
+                }).done(function(data){
                     var feedback = JSON.parse(data);
                     alert(feedback[1]);
                     load_data();
-                }).always(function(data){
-                    element.prop("disabled", false).html(initial_text);
                 })
             }else{
                 alert("Title cannot be empty");
@@ -141,22 +151,16 @@ $(document).ready(function(){
             $.post(
                 url,
                 {action: "delete", id: id}
-            ).done(function(data){
+            ).always(function(){
+                element.prop("disabled", false).html(initial_text);
+            }).done(function(data){
                 var feedback = JSON.parse(data);
                 alert(feedback[1]);
                 if(feedback[0]==true){
                     load_data();
                 }
-            }).always(function(data){
-                element.prop("disabled", false).html(initial_text);
             })
         }
-    })
-
-    //pagination
-    $(document).on("click", ".page-link", function(e){
-        e.preventDefault();
-        load_data($(this).data("page"));
     })
 
     //search
@@ -170,7 +174,9 @@ $(document).ready(function(){
             $.post(
                 url,
                 {action: "search", search: search}
-            ).done(function(data){
+            ).always(function(){
+                element.prop("disabled", false).html(initial_text);
+            }).done(function(data){
                 var table = $("#data-table");
                 table.find("tr:not(:first-child)").remove();
                 $("#pagination>li").remove();
@@ -183,15 +189,13 @@ $(document).ready(function(){
                         if(row[1]==null){
                             row[1] = "-" ;
                         }
-                        table.append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+row[0]+"</td><td>"+row[1]+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+row[2]+"' data-title='"+row[0]+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+row[2]+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+                        append(table, 1, row[0], row[1], row[2]);
                     }
                     $("#records-count").html(count);
                 }else{
                     table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
                     $("#records-count").html(0);
                 }
-            }).always(function(){
-                element.prop("disabled", false).html(initial_text);
             })
         }else{
             load_data();
