@@ -34,11 +34,10 @@ $(document).ready(function(){
                 }
                 $("#records-count").html(total_records);
                 var total_pages = Math.ceil(total_records/25);
-                var pages = "";
+                $("#pagination>*").remove();
                 for(i=1; i<=total_pages; i++){
-                    pages += "<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";
+                    $("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");
                 }
-                $("#pagination").html(pages);
                 $("[data-page='"+page+"']").addClass("active");
             }else{
                 table.append("<tr><td colspan='7' class='text-center'>"+feedback[1]+"</td></tr>")
@@ -70,7 +69,7 @@ $(document).ready(function(){
                     var option = "<option value='"+row[0]+"'>"+row[1]+"</option>";
                     select.append(option);
                 }
-                $("#genre option[value="+selected+"]").prop("selected", true);
+                $("#genre>option[value="+selected+"]").prop("selected", true);
                 $(".action-title").html(title);
                 $("#submit-btn").html(button).data("action",action);
                 $("#data-modal").modal("show");
@@ -105,11 +104,16 @@ $(document).ready(function(){
             element.prop("disabled", false).html(initial_text);
         }).done(function(data){
             var feedback = JSON.parse(data);
-            data_modal(element, "update","Edit record","Update", feedback[4]);
-            $("#submit-btn").data("id",feedback[0]);
-            $("#isbn").val(feedback[3]);
-            $("#title").val(feedback[1]);
-            $("#authors").val(feedback[2]);
+            if(feedback[0]==true){
+                data = feedback[1]
+                data_modal(element, "update","Edit record","Update", data[4]);
+                $("#submit-btn").data("id",data[0]);
+                $("#isbn").val(data[3]);
+                $("#title").val(data[1]);
+                $("#authors").val(data[2]);
+            }else{
+                alert(feedback[1]);
+            }
         })
     })
 

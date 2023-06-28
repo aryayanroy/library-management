@@ -38,11 +38,10 @@ $(document).ready(function(){
                 }
                 $("#records-count").html(total_records);
                 var total_pages = Math.ceil(total_records/25);
-                var pages = "";
+                $("#pagination>*").remove();
                 for(i=1; i<=total_pages; i++){
-                    pages += "<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>";
+                    $("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");
                 }
-                $("#pagination").html(pages);
                 $("[data-page='"+page+"']").addClass("active");
             }else{
                 table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")

@@ -69,7 +69,7 @@
     <!-- off canvas -->
     <aside id="aside-right" class="offcanvas offcanvas-end">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title text-truncate">Hello, Sabrina</h5>
+            <h5 class="offcanvas-title text-truncate">Hello, <?php echo $username; ?></h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
