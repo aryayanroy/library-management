@@ -23,7 +23,14 @@
             }
             return $feedback;
         }
+
         $output = array();
+        if(in_array($_POST["action"], ["insert", "update"])){
+            $name = trim($_POST["name"]);
+            $phone = trim($_POST["phone"]);
+            $email = trim($_POST["email"]);
+            $address = trim($_POST["address"]);
+        }
         if($_POST["action"]=="load-data"){
             $offset = ($_POST["page"]-1)*25;
             $sql = $conn->prepare("SELECT id, member_id, name, registration, renewal FROM members LIMIT ?, 25");
@@ -42,15 +49,28 @@
             }
         }elseif($_POST["action"]=="insert"){
             $id = base_convert(time(), 10, 36);
-            $sql = $conn->prepare("INSERT INTO members (member_id, name, phone, email, gender, address) VALUES ('$id', ?, ?, ?, ?, ?)");
-            $sql->bindParam(1, $_POST["name"], PDO::PARAM_STR);
-            $sql->bindParam(2, $_POST["phone"], PDO::PARAM_INT);
-            $sql->bindParam(3, $_POST["email"], PDO::PARAM_STR);
-            $sql->bindParam(4, $_POST["gender"], PDO::PARAM_INT);
-            $sql->bindParam(5, $_POST["address"], PDO::PARAM_STR);
+            $sql = $conn->prepare("INSERT INTO members (member_id, name, dob, phone, email, gender, address) VALUES ('$id', ?, ?, ?, ?, ?, ?)");
+            $sql->bindParam(1, $name, PDO::PARAM_STR);
+            $sql->bindParam(2, $_POST["dob"], PDO::PARAM_STR);
+            $sql->bindParam(3, $phone, PDO::PARAM_INT);
+            $sql->bindParam(4, $email, PDO::PARAM_STR);
+            $sql->bindParam(5, $_POST["gender"], PDO::PARAM_INT);
+            $sql->bindParam(6, $address, PDO::PARAM_STR);
             $output = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
+        }elseif($_POST["action"]=="load-view"){
+            $sql = $conn->prepare("SELECT member_id, name, dob, gender, registration, renewal, phone, email, address FROM members WHERE id = ?");
+            $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
+            $output = sql_execute($sql, null, "Couldn't fetch records");
+            if($output[0] == true){
+                if($sql->rowCount()==1){
+                    $output[1] = $sql->fetch(PDO::FETCH_NUM);
+                }else{
+                    $output[0] = false;
+                    $output[1] = "Coudn't fetch record details";
+                }
+            }
         }elseif($_POST["action"]=="load-edit"){
-            $sql = $conn->prepare("SELECT id, name, phone, email, gender, address FROM members WHERE id = ?");
+            $sql = $conn->prepare("SELECT id, name, dob, phone, email, gender, address FROM members WHERE id = ?");
             $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
             $output = sql_execute($sql, null, "Couldn't fetch records");
             if($output[0] == true){
@@ -62,9 +82,35 @@
                 }
             }
         }elseif($_POST["action"]=="update"){
-            $sql = $conn->prepare("SELECT id, name, phone, email, gender, address FROM members WHERE id = ?");
+            $sql = $conn->prepare("UPDATE members SET name = ? , dob = ?, phone = ?, email = ?, gender = ?, address = ?  WHERE id = ?");
+            $sql->bindParam(1, $name, PDO::PARAM_STR);
+            $sql->bindParam(2, $_POST["dob"], PDO::PARAM_STR);
+            $sql->bindParam(3, $phone, PDO::PARAM_INT);
+            $sql->bindParam(4, $email, PDO::PARAM_STR);
+            $sql->bindParam(5, $_POST["gender"], PDO::PARAM_INT);
+            $sql->bindParam(6, $address, PDO::PARAM_STR);
+            $sql->bindParam(7, $_POST["id"], PDO::PARAM_INT);
+            $output = sql_execute($sql, "Record updated successfully", "Couldn't update the record");
+        }elseif($_POST["action"]=="renew"){
+            $sql = $conn->prepare("UPDATE members SET renewal = DATE_ADD(CURDATE(), INTERVAL ? MONTH) WHERE id = ?");
+            $sql->bindParam(1, $_POST["months"], PDO::PARAM_INT);
+            $sql->bindParam(2, $_POST["id"], PDO::PARAM_INT);
+            $output = sql_execute($sql, "Renew date updated succesfully", "Couldn't update renew date");
+        }elseif($_POST["action"]=="search"){
+            $search = "%".$_POST["search"]."%";
+            $sql = $conn->prepare("SELECT id, member_id, name, registration, renewal FROM members WHERE name LIKE ? OR member_id = ?");
+            $sql->bindParam(1, $search, PDO::PARAM_STR);
+            $sql->bindParam(2, $_POST["search"], PDO::PARAM_STR);
+            $output = sql_execute($sql, null, "Couldn't fetch records");
+            if($output[0]==true){
+                if($sql->rowCount()>0){
+                    $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
+                }else{
+                    $output[0] = false;
+                    $output[1] = "No records found for: ".$_POST["search"];
+                }
+            }
         }
-
         echo json_encode($output);
         die();
     }
@@ -87,8 +133,8 @@
 <body>
     <div class="container-xxl">
         <div class="row">
-            <aside class="d-none d-md-block col-3 col-xl-2 min-vh-100 border-end">
-                <div class="py-3 d-flex flex-column sticky-top h-100">
+            <aside class="d-none d-md-block col-3 col-xl-2 sticky-top vh-100 border-end">
+                <div class="py-3 d-flex flex-column h-100">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 64" width=50 class="mx-auto"><path d="M55 26.5v23.8c0 1.2-.4 2.2-1.3 3.2-.9.9-1.9 1.5-3.2 1.6-3.5.4-6.8 1.3-10.1 2.6S34 60.8 31 62.9a6.06 6.06 0 0 1-3.5 1.1 6.06 6.06 0 0 1-3.5-1.1c-3-2.1-6.1-3.9-9.4-5.2s-6.7-2.2-10.1-2.6c-1.3-.2-2.3-.7-3.2-1.6-.9-1-1.3-2-1.3-3.2V26.5c0-1.3.5-2.4 1.4-3.2s2-1.2 3.1-1c4 .6 8 2 11.9 4 3.9 2.1 7.6 4.8 11.1 8.1 3.5-3.3 7.2-6 11.1-8.1s7.9-3.4 11.9-4c1.2-.2 2.2.1 3.1 1 .9.8 1.4 1.9 1.4 3.2z" fill="#004d40"/><path d="M39.5 11.8c0 3.3-1.1 6.1-3.4 8.4s-5.1 3.4-8.4 3.4-6.1-1.1-8.4-3.4-3.4-5.1-3.4-8.4 1.1-6.1 3.4-8.4S24.4 0 27.7 0s6.1 1.1 8.4 3.4 3.4 5.1 3.4 8.4z" fill="#e65100"/></svg>
                     <hr>
                     <nav class="nav nav-pills flex-column flex-grow-1">
@@ -96,7 +142,6 @@
                         <a href="borrows" class="nav-link link-dark"><i class="fa-solid fa-list-check me-2"></i><span>Borrows</span></a>
                         <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link active"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
-                        <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
                         <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
                         <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
@@ -157,7 +202,6 @@
                 <a href="borrows" class="nav-link link-dark"><i class="fa-solid fa-list-check me-2"></i><span>Borrows</span></a>
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
-                <a href="shelves" class="nav-link link-dark"><i class="fa-solid fa-layer-group me-2"></i><span>Shelves</span></a>
                 <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
                 <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
@@ -178,6 +222,10 @@
                         <div class="col-sm-6">
                             <label for="name" class="form-label">Full name</label>
                             <input type="text" id="name" name="name" class="form-control" spellcheck="false" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="dob" class="form-label">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" class="form-control" max="<?php echo date("Y-m-d");?>" required>
                         </div>
                         <div class="col-sm-6">
                             <label for="name" class="form-label">Phone number</label>
@@ -218,39 +266,39 @@
                     <div class="row g-3">
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Member ID</div>
-                            <div>RWX9NJ</div>
+                            <div id="view-id"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Full name</div>
-                            <div class="word-break">Hailee Steinfeld</div>
+                            <div id="view-name" class="word-break"></div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="text-secondary">Date of Birth</div>
+                            <div id="view-dob" class="word-break"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Gender</div>
-                            <div>Male</div>
+                            <div id="view-gender"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Registration</div>
-                            <div>28-06-2023</div>
+                            <div id="view-reg"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Renewal</div>
-                            <div class="text-truncate">28-06-2023</div>
+                            <div id="view-ren" class="text-truncate"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Phone</div>
-                            <div class="word-break">8273911982</div>
+                            <div id="view-phone" class="word-break"></div>
                         </div>
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="text-secondary">Email address</div>
-                            <div class="text-truncate">haileesteinfeld@gmail.com</div>
-                        </div>
-                        <div class="col-sm-6 col-md-4 col-lg-3">
-                            <div class="text-secondary">Status</div>
-                            <div class="text-truncate">Active</div>
+                            <div id="view-email" class="text-truncate"></div>
                         </div>
                         <div class="col-12">
                             <div class="text-secondary">Address</div>
-                            <div>1562 Rugby Cir, Thousand Oaks, CA 91360, USA</div>
+                            <div id="view-address"></div>
                         </div>
                     </div>
                     <div class="table-responsive mt-3">
@@ -267,55 +315,32 @@
             </div>
         </div>
     </div>
+    <div id="renew-modal" class="modal fade">
+        <div class="modal-dialog modal-sm modal-fullscreen-sm-down">
+            <form action="#" method="post" id="renew-form" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Renew</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="renew-months" class="form-label">No. of months?</label>
+                    <select id="renew-months" name="months" class="form-select">
+                        <option value="">-select-</option>
+                        <option value="0">0 month</option>
+                        <option value="1">1 month</option>
+                        <option value="6">6 months</option>
+                        <option value="12">12 months</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="renew-btn" class="btn btn-primary w-100">Renew</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script src="assets/public/js/members.js"></script>
-<script>
-    $(document).ready(function(){
-        var url = window.location.href;
-
-        $(document).on("click", ".view-btn", function(){
-            var id = $(this).val();
-            $.post(
-                url,
-                {action: "view-btn", id: id}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                $("#view-modal").modal("show");
-            })
-        })
-
-        function data_modal(action, title, button){
-            $(".action-title").html(title);
-            $("#submit-btn").html(button).data("action",action);
-            $("#data-modal").modal("show");
-        }
-
-        $(document).on("click", ".edit-btn", function(){
-            var id = $(this).val();
-            $.post(
-                url,
-                {action: "load-edit", id: id}
-            ).done(function(data){
-                var feedback = JSON.parse(data);
-                if(feedback[0]==true){
-                    var data = feedback[1];
-                    console.log(data);
-                    data_modal("update","Update record","Update");
-                    $("#submit-btn").data("id",data[0]);
-                    $("#name").val(data[1]);
-                    $("#phone").val(data[2]);
-                    $("#email").val(data[3]);
-                    $("#gender>option[value="+data[4]+"]").prop("selected", true);
-                    $("#address").val(data[5]);
-                }else{
-                    alert(feedback[1]);
-                }
-            })
-        })
-
-
-    })
-</script>
 </html>

@@ -27,6 +27,7 @@ $(document).ready(function(){
             var feedback = JSON.parse(data);
             var total_records = feedback[2];
             var offset = (page-1)*25+1;
+            var count = $("#records-count");
             if(feedback[0]==true){
                 var rows = feedback[1];
                 for(i=0; i<rows.length; i++){
@@ -36,7 +37,7 @@ $(document).ready(function(){
                     }
                     append(table, offset, row[0], row[1], row[2]);
                 }
-                $("#records-count").html(total_records);
+                count.html(total_records);
                 var total_pages = Math.ceil(total_records/25);
                 $("#pagination>*").remove();
                 for(i=1; i<=total_pages; i++){
@@ -45,7 +46,7 @@ $(document).ready(function(){
                 $("[data-page='"+page+"']").addClass("active");
             }else{
                 table.append("<tr><td colspan='5' class='text-center'>"+feedback[1]+"</td></tr>")
-                $("#records-count").html(0);
+                count.html(0);
             }
         })
     }
@@ -126,7 +127,7 @@ $(document).ready(function(){
                 var id = element.val();
                 $.post(
                     url,
-                    {action: "edit", title: title, id: id}
+                    {action: "update", title: title, id: id}
                 ).always(function(){
                     element.prop("disabled", false).html(initial_text);
                 }).done(function(data){
@@ -178,7 +179,7 @@ $(document).ready(function(){
             }).done(function(data){
                 var table = $("#data-table");
                 table.find("tr:not(:first-child)").remove();
-                $("#pagination>li").remove();
+                $("#pagination>*").remove();
                 var feedback = JSON.parse(data);
                 if(feedback[0]==true){
                     var rows = feedback[1];

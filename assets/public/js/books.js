@@ -147,10 +147,10 @@ $(document).ready(function(){
 
     //delete record
     $(document).on("click",".delete-btn",function(){
-        var element = $(this);
-        var initial_text = element.html();
-        var id = element.val();
         if(confirm("Are you sure want to delete the record? This will also delete it's all related records.")){
+            var element = $(this);
+            var initial_text = element.html();
+            var id = element.val();
             element.prop("disabled", true).html(loading);
             $.post(
                 url,
@@ -180,6 +180,7 @@ $(document).ready(function(){
             ).done(function(data){
                 var table = $("#data-table");
                 table.find("tr:not(:first-child)").remove();
+                $("#pagination>*").remove();
                 var feedback = JSON.parse(data);
                 if(feedback[0]==true){
                     var rows = feedback[1];
