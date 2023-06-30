@@ -6,15 +6,12 @@
     }
     if($_SERVER["REQUEST_METHOD"]=="POST"){
         require "config.php";
-
         $username = str_replace(" ", "", trim($_POST["username"]));
         $password = trim($_POST["password"]);
-
         $sql = $conn->prepare("SELECT * FROM admins WHERE username = ?");
         $sql->bindParam(1, $username, PDO::PARAM_STR);
         $sql->execute();
         $admin = $sql->fetch(PDO::FETCH_ASSOC);
-
         if($admin && password_verify($password, $admin["password"])){
             $_SESSION["admin"] = $admin["id"];
             $feedback = true;

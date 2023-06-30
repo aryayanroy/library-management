@@ -4,15 +4,11 @@
         header("Location: /library-management");
         die();
     }
-
     require "config.php";
-
-    //Get admin username
     $sql = $conn->prepare("SELECT username FROM admins WHERE id = ?");
     $sql->bindParam(1, $_SESSION["admin"], PDO::PARAM_STR);
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
-
     $sql = $conn->prepare("SELECT COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NULL), 0), COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NOT NULL), 0), COALESCE((SELECT SUM(DATEDIFF(CURDATE(), due)) FROM borrows WHERE returned IS NULL AND CURDATE() > due), 0), COALESCE((SELECT SUM(DATEDIFF(returned, due)) FROM borrows WHERE returned IS NOT NULL AND returned > due), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS TRUE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS FALSE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal > CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal <= CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM books), 0), COALESCE((SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre), 0)");
     $sql->execute();
     $data = $sql->fetch(PDO::FETCH_NUM);

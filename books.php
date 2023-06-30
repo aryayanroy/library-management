@@ -4,15 +4,11 @@
         header("Location: /library-management");
         die();
     }
-
     require "config.php";
-
-    //Get admin username
     $sql = $conn->prepare("SELECT username FROM admins WHERE id = ?");
     $sql->bindParam(1, $_SESSION["admin"], PDO::PARAM_STR);
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
-
     if($_SERVER["REQUEST_METHOD"]=="POST"){
         function sql_execute($sql, $success, $error){
             try{
@@ -31,14 +27,14 @@
             $isbn = trim($_POST["isbn"]);
         }
         $output = array();
-        if($_POST["action"]=="load-genre"){     //Load genre
+        if($_POST["action"]=="load-genre"){
             $sql = $conn->prepare("SELECT id, title FROM genres ORDER BY title");
             $sql->execute();
             if($sql->rowCount()>0){
                 $output[0] = true;
                 $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
             }
-        }elseif($_POST["action"]=="load-data"){     //Load data
+        }elseif($_POST["action"]=="load-data"){
             $offset = ($_POST["page"]-1)*25;
             $sql = $conn->prepare($statement."LIMIT ?, 25");
             $sql->bindParam(1, $offset, PDO::PARAM_INT);
@@ -61,7 +57,7 @@
                     $output[1] = "No records found";
                 }
             }
-        }elseif($_POST["action"]=="insert"){    //Insert record
+        }elseif($_POST["action"]=="insert"){
             $sql = $conn->prepare("INSERT INTO books (title, authors, isbn, genre) VALUES (?, ?, ?, ?)");
             $sql->bindParam(1, $title, PDO::PARAM_STR);
             $sql->bindParam(2, $authors, PDO::PARAM_STR);
@@ -242,5 +238,7 @@
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-<script src="assets/public/js/books.js"></script>
+<script>
+$(document).ready((function(){var t=window.location.href,a="<i class='fas fa-circle-notch fa-spin fa-xl'></i>";function e(t,a,e,n,o,r,d,l){r=r?"text-success'>Yes":"text-danger'>No",t.append("<tr><td class='text-center'>"+(i+a)+"</td><td>"+e+"</td><td>"+n+"</td><td class='text-nowrap'>"+o+"</td><td class='text-center "+r+"</td><td class='text-nowrap'>"+d+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+l+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+l+"><i class='fa-solid fa-trash'></i></button></td></tr>")}function n(n){n||(n=$(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1);var o=$("#data-table");o.find("tr:not(:first-child)").remove(),o.append("<tr><td colspan='7' class='text-center'>"+a+"</td></tr>"),$.post(t,{action:"load-data",page:n}).always((function(){o.find("tr:nth-child(2)").remove()})).done((function(t){var a=JSON.parse(t),r=a[2],d=25*(n-1)+1;if(1==a[0]){var l=a[1];for(i=0;i<l.length;i++){var s=l[i];e(o,d,s[1],s[2],s[3],s[4],s[5],s[0])}$("#records-count").html(r);var c=Math.ceil(r/25);for($("#pagination>*").remove(),i=1;i<=c;i++)$("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");$("[data-page='"+n+"']").addClass("active")}else o.append("<tr><td colspan='7' class='text-center'>"+a[1]+"</td></tr>"),$("#records-count").html(0)}))}function o(e,n,o,r,d){var l=e.html();e.prop("disabled",!0).html(a),$.post(t,{action:"load-genre"}).always((function(){e.prop("disabled",!1).html(l)})).done((function(t){var a=JSON.parse(t);if(1==a[0]){var e=$("#genre");e.find("option").remove(),"insert"==n&&e.append("<option value=''>-select-</option>");var l=a[1];for(i=0;i<l.length;i++){var s=l[i],c="<option value='"+s[0]+"'>"+s[1]+"</option>";e.append(c)}$("#genre>option[value="+d+"]").prop("selected",!0),$(".action-title").html(o),$("#submit-btn").html(r).data("action",n),$("#data-modal").modal("show")}else alert(a[1])}))}n(),$(document).on("click",".page-link",(function(t){t.preventDefault(),n($(this).data("page"))})),$("#insert-btn").click((function(){$("#data-form")[0].reset(),o($(this),"insert","New record","Add record")})),$(document).on("click",".edit-btn",(function(){var e=$(this),n=e.html();e.prop("disabled",!0).html(a);var i=e.val();$.post(t,{action:"load-edit",id:i}).always((function(){e.prop("disabled",!1).html(n)})).done((function(t){var a=JSON.parse(t);1==a[0]?(t=a[1],o(e,"update","Edit record","Update",t[4]),$("#submit-btn").data("id",t[0]),$("#isbn").val(t[3]),$("#title").val(t[1]),$("#authors").val(t[2])):alert(a[1])}))})),$("#data-form").submit((function(e){e.preventDefault();var i=$("#submit-btn"),o=i.html();i.prop("disabled",!0).html(a);var r=i.data("action"),d=$(this).serializeArray();d.push({name:"action",value:r}),"update"==r&&d.push({name:"id",value:i.data("id")}),d=$.param(d),$.post(t,d).always((function(){i.prop("disabled",!1).html(o)})).done((function(t){var a=JSON.parse(t);1==a[0]&&($("#data-form")[0].reset(),$("#data-modal").modal("hide"),n()),alert(a[1])}))})),$(document).on("click",".delete-btn",(function(){if(confirm("Are you sure want to delete the record? This will also delete it's all related records.")){var e=$(this),i=e.html(),o=e.val();e.prop("disabled",!0).html(a),$.post(t,{action:"delete",id:o}).always((function(){e.prop("disabled",!1).html(i)})).done((function(t){var a=JSON.parse(t);alert(a[1]),1==a[0]&&n()}))}})),$("#search-form").submit((function(o){o.preventDefault();var r=$.trim($("#search-field").val());if(""!=r){var d=$("#search-btn"),l=d.html();d.prop("disabled",!0).html(a),$.post(t,{action:"search",search:r}).done((function(t){var a=$("#data-table");a.find("tr:not(:first-child)").remove(),$("#pagination>*").remove();var n=JSON.parse(t);if(1==n[0]){var o=n[1],r=o.length;for(i=0;i<r;i++){var d=o[i];e(a,1,d[1],d[2],d[3],d[4],d[0])}$("#records-count").html(r)}else a.append("<tr><td colspan='7' class='text-center'>"+n[1]+"</td></tr>"),$("#records-count").html(0)})).always((function(){d.prop("disabled",!1).html(l)}))}else n()}))}));
+</script>
 </html>

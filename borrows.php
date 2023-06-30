@@ -4,15 +4,11 @@
         header("Location: /library-management");
         die();
     }
-
     require "config.php";
-
-    //Get admin username
     $sql = $conn->prepare("SELECT username FROM admins WHERE id = ?");
     $sql->bindParam(1, $_SESSION["admin"], PDO::PARAM_STR);
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
-
     if($_SERVER["REQUEST_METHOD"]=="POST"){
         function sql_execute($sql, $success, $error){
             try{
@@ -238,5 +234,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-<script src="assets/public/js/borrows.js"></script>
+<script>
+$(document).ready((function(){var t=window.location.href,a="<i class='fas fa-circle-notch fa-spin fa-xl'></i>";function e(t,a,e,n,r,o,d,s){var c,l,p="-",m=moment(o).diff(moment(),"days");d?(c="text-success'>Returned",d=moment(d).format("DD-MM-YYYY"),l="-"):(m<0?(c="text-danger'>Late",p=-5*m):c="'>Pending",d="-",l="<button type='button' class='btn btn-primary btn-sm checkin-btn' value="+s+"><i class='fa-solid fa-check'></i></button>"),r=moment(r).format("DD-MM-YYYY"),o=moment(o).format("DD-MM-YYYY"),t.append("<tr><td class='text-center'>"+(i+a)+"</td><td class='text-nowrap'>"+e+"</td><td>"+n.toUpperCase()+"</td><td class='text-center text-nowrap'>"+r+"</td><td class='text-center text-nowrap'>"+o+"</td><td class='text-center "+c+"</td><td class='text-center text-nowrap'>"+d+"</td><td class='text-end'>"+p+"</td><td class='text-center'>"+l+"</td></tr>")}function n(n){n||(n=$(".active[data-page]").data("page")?$(".active[data-page]").data("page"):1);var r=$("#data-table");r.find("tr:not(:first-child)").remove(),r.append("<tr><td colspan='9' class='text-center'>"+a+"</td></tr>"),$.post(t,{action:"load-data",page:n}).always((function(){r.find("tr:nth-child(2)").remove()})).done((function(t){var a=JSON.parse(t),o=a[2],d=25*(n-1)+1,s=$("#records-count");if(1==a[0]){var c=a[1];for(i=0;i<c.length;i++){var l=c[i];e(r,d,l[1],l[2],l[3],l[4],l[5],l[0])}s.html(o);var p=Math.ceil(o/25);for($("#pagination>*").remove(),i=1;i<=p;i++)$("#pagination").append("<li class='page-item'><a href='#' class='page-link' data-page="+i+">"+i+"</a></li>");$("[data-page='"+n+"']").addClass("active")}else r.append("<tr><td colspan='9' class='text-center'>"+a[1]+"</td></tr>"),s.html(0)}))}n(),$(document).on("click",".page-link",(function(t){t.preventDefault(),n($(this).data("page"))})),$("#data-form").submit((function(e){e.preventDefault();var r=$("#submit-btn"),i=r.html();r.prop("disabled",!0).html(a);var o=$(this).serializeArray();o.push({name:"action",value:"insert"}),o=$.param(o),$.post(t,o).always((function(){r.prop("disabled",!1).html(i)})).done((function(t){var a=JSON.parse(t);1==a[0]&&($("#data-form")[0].reset(),$("#data-modal").modal("hide"),n()),alert(a[1])}))})),$(document).on("click",".checkin-btn",(function(){if(confirm("Do you want to check in this item?")){var e=$(this),r=e.html(),i=e.val();e.prop("disabled",!0).html(a),$.post(t,{action:"update",id:i}).always((function(){e.prop("disabled",!1).html(r)})).done((function(t){var a=JSON.parse(t);alert(a[1]),1==a[0]&&n()}))}})),$("#search-form").submit((function(r){r.preventDefault();var o=$.trim($("#search-field").val());if(""!=o){var d=$("#search-btn"),s=d.html();d.prop("disabled",!0).html(a),$.post(t,{action:"search",search:o}).done((function(t){var a=$("#data-table");a.find("tr:not(:first-child)").remove(),$("#pagination>*").remove();var n=JSON.parse(t);if(1==n[0]){var r=n[1],o=r.length;for(i=0;i<o;i++){var d=r[i];e(a,1,d[1],d[2],d[3],d[4],d[5],d[0])}$("#records-count").html(o)}else a.append("<tr><td colspan='9' class='text-center'>"+n[1]+"</td></tr>"),$("#records-count").html(0)})).always((function(){d.prop("disabled",!1).html(s)}))}else n()}))}));
+</script>
 </html>
