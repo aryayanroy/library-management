@@ -4,7 +4,7 @@ Admin credentials:
 username: admin
 password: admin@123
 
-Run this MySQL query:
+Run these MySQL queries:
 CREATE DATABASE library_management;
 USE library_management;
 CREATE TABLE admins(
