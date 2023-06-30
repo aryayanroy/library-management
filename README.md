@@ -1,9 +1,7 @@
 The Library Management System is a comprehensive software solution designed to streamline and automate various library operations. It provides an efficient platform for managing books, members, borrowings, and returns in a library setting. With this system, librarians can easily track and organize books, handle member registrations, facilitate book borrowing and returning processes, and generate reports.
 
-Admin credentials:
-
-username: admin
-
+Admin credentials:\
+username: admin\
 password: admin@123
 
 Run these MySQL queries:
