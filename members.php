@@ -14,7 +14,6 @@
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
     if($_SERVER["REQUEST_METHOD"]=="POST"){
-        sleep(3);
         function sql_execute($sql, $success, $error){
             try{
                 $sql->execute();

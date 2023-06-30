@@ -1,6 +1,6 @@
 $(document).ready(function(){
     var url = window.location.href;
-    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
+    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>"; 
 
     function append(table, offset, mid, name, reg, ren, id){
         var status;

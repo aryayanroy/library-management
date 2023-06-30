@@ -34,10 +34,13 @@ $(document).ready(function(){
         }
         var table = $("#data-table");
         table.find("tr:not(:first-child)").remove();
+        table.append("<tr><td colspan='9' class='text-center'>"+loading+"</td></tr>");
         $.post(
             url,
             {action: "load-data", page: page},
-        ).done(function(data){
+        ).always(function(){
+            table.find("tr:nth-child(2)").remove();
+        }).done(function(data){
             var feedback = JSON.parse(data);
             var total_records = feedback[2];
             var offset = (page-1)*25+1;
@@ -72,13 +75,18 @@ $(document).ready(function(){
 
     $("#data-form").submit(function(e){
         e.preventDefault();
+        var element = $("#submit-btn");
+        var initial_text = element.html();
+        element.prop("disabled", true).html(loading);
         var form_data = $(this).serializeArray();
         form_data.push({name: "action", value: "insert"});
         form_data = $.param(form_data);
         $.post(
             url,
             form_data
-        ).done(function(data){
+        ).always(function(){
+            element.prop("disabled", false).html(initial_text);
+        }).done(function(data){
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 $("#data-form")[0].reset();
@@ -91,11 +99,16 @@ $(document).ready(function(){
 
     $(document).on("click",".checkin-btn", function(){
         if(confirm("Do you want to check in this item?")){
-            var id = $(this).val();
+            var element = $(this);
+            var initial_text = element.html();
+            var id = element.val();
+            element.prop("disabled", true).html(loading);
             $.post(
                 url,
                 {action: "update", id: id}
-            ).done(function(data){
+            ).always(function(){
+                element.prop("disabled", false).html(initial_text);
+            }).done(function(data){
                 var feedback = JSON.parse(data);
                 alert(feedback[1]);
                 if(feedback[0]==true){
@@ -109,6 +122,9 @@ $(document).ready(function(){
         e.preventDefault();
         var search = $.trim($("#search-field").val());
         if(search!=""){
+            var element = $("#search-btn");
+            var initial_text = element.html();
+            element.prop("disabled", true).html(loading);
             $.post(
                 url,
                 {action: "search", search: search}
@@ -129,6 +145,8 @@ $(document).ready(function(){
                     table.append("<tr><td colspan='9' class='text-center'>"+feedback[1]+"</td></tr>")
                     $("#records-count").html(0);
                 }
+            }).always(function(){
+                element.prop("disabled", false).html(initial_text);
             })
         }else{
             load_data();
