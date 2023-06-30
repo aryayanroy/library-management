@@ -23,7 +23,7 @@
             return $feedback;
         }
         if(in_array($_POST["action"], ["load-data", "search"])){
-            $statement = "SELECT parent.title, child.title, COALESCE(book_count, 0) AS book_count, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre LEFT JOIN (SELECT genre, COUNT(*) AS book_count FROM books GROUP BY genre) AS book_counts ON parent.id = book_counts.genre ";
+            $statement = "SELECT p.title, c.title, COALESCE(book_counts.book_count, 0), p.id FROM genres p LEFT JOIN genres c ON p.id = c.parent_genre LEFT JOIN( SELECT genre, COUNT(*) AS book_count FROM books GROUP BY genre) AS book_counts ON p.id = book_counts.genre ";
         }
         $output =  array();
         if($_POST["action"]=="load-genre"){     //Load genre
@@ -41,7 +41,7 @@
             if($output[0] = true){
                 if($sql->rowCount()>0){
                     $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
-                    $sql = $conn->prepare("SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre");
+                    $sql = $conn->prepare("SELECT COUNT(*) FROM genres AS p LEFT JOIN genres AS c ON p.id = c.parent_genre");
                     $sql->execute();
                     $output[2] = $sql->fetch(PDO::FETCH_NUM)[0];
                 }else{
@@ -71,7 +71,7 @@
             $output = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }elseif($_POST["action"]=="search"){
             $search = "%".$_POST["search"]."%";
-            $sql = $conn->prepare($statement."WHERE parent.title LIKE ?");
+            $sql = $conn->prepare($statement."WHERE p.title LIKE ?");
             $sql->bindParam(1, $search, PDO::PARAM_STR);
             $output = sql_execute($sql, null, "Couldn't fetch records");
             if($output[0]==true){
@@ -115,7 +115,6 @@
                         <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="genres" class="nav-link active"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                        <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
                     <div class="dropup-start dropup">
@@ -173,7 +172,6 @@
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                 <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
         </div>
         <div class="p-3 border-top">

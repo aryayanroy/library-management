@@ -24,7 +24,7 @@
             return $feedback;
         }
         if(in_array($_POST["action"], ["load-data", "search"])){
-            $statement = "WITH RECURSIVE genre_hierarchy AS ( SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, NOT EXISTS (SELECT 1 FROM borrows WHERE book = b.id AND returned IS NULL) AS returned, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
+            $statement = "WITH RECURSIVE call_no AS( SELECT id, title, parent_genre, title AS call_no FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.call_no, g.title) FROM genres g INNER JOIN call_no gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, NOT EXISTS ( SELECT 1 FROM borrows WHERE borrows.book = b.id AND borrows.returned IS NULL ) AS returned, ch.call_no FROM books b JOIN call_no ch ON b.genre = ch.id ";
         }elseif(in_array($_POST["action"], ["insert", "update"])){
             $title = trim($_POST["title"]);
             $authors = trim($_POST["authors"]);
@@ -140,7 +140,6 @@
                         <a href="books" class="nav-link active"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                        <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
                     <div class="dropup-start dropup">
@@ -200,7 +199,6 @@
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                 <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
         </div>
         <div class="p-3 border-top">

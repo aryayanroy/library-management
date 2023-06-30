@@ -13,13 +13,15 @@
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
-    $sql = $conn->prepare("SELECT COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NULL), 0), COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NOT NULL), 0), COALESCE((SELECT SUM(DATEDIFF(CURDATE(), due)) FROM borrows WHERE returned IS NULL AND CURDATE() > due), 0), COALESCE((SELECT SUM(DATEDIFF(returned, due)) FROM borrows WHERE returned IS NOT NULL AND returned > due), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS TRUE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS FALSE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal <= CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal > CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM books), 0), COALESCE((SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre), 0)");
+    $sql = $conn->prepare("SELECT COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NULL), 0), COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NOT NULL), 0), COALESCE((SELECT SUM(DATEDIFF(CURDATE(), due)) FROM borrows WHERE returned IS NULL AND CURDATE() > due), 0), COALESCE((SELECT SUM(DATEDIFF(returned, due)) FROM borrows WHERE returned IS NOT NULL AND returned > due), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS TRUE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS FALSE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal > CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal <= CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM books), 0), COALESCE((SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre), 0)");
     $sql->execute();
-    $borrow = $sql->fetch(PDO::FETCH_NUM);
-    $loan = $borrow[0];
-    $returned = $borrow[1];
-    $collected = $borrow[2];
-    $pending = $borrow[3];
+    $data = $sql->fetch(PDO::FETCH_NUM);
+    $loan = $data[0];
+    $returned = $data[1];
+    $collected = $data[2]*5;
+    $pending = $data[3]*5;
+    $male = $data[4];
+    $female = $data[5];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +51,6 @@
                         <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                         <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                         <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                        <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
                     </nav>
                     <hr>
                     <div class="dropup-start dropup">
@@ -91,46 +92,46 @@
                         <div class="col-sm-6 col-md-4">
                             <table class="table table-striped table-sm">
                                 <tr>
-                                    <th colspan="2">Fines</th>
+                                    <th colspan="2">Fines(₹)</th>
                                 </tr>
                                 <tr>
                                     <td>Collected</td>
-                                    <td class="text-end"><?php echo $collected; ?></td>
+                                    <td class="text-end"><?php echo $collected.".00"; ?></td>
                                 </tr>
                                 <tr>
                                     <td>Pending</td>
-                                    <td class="text-end"><?php echo $pending; ?></td>
+                                    <td class="text-end"><?php echo $pending.".00"; ?></td>
                                 </tr>
                                 <tr>
                                     <td>Total</td>
-                                    <td class="text-end"><?php echo $collected+$pending; ?></td>
+                                    <td class="text-end"><?php echo $collected+$pending.".00"; ?></td>
                                 </tr>
                             </table>
                         </div>
                         <div class="col-sm-6 col-md-4">
                             <table class="table table-striped table-sm">
                                 <tr>
-                                    <th colspan="2">Members</th>
+                                    <th colspan="4">Members</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="2">Gender</th>
+                                    <th colspan="2">Status</th>
                                 </tr>
                                 <tr>
                                     <td>Male</td>
-                                    <td>1.3k</td>
+                                    <td class="text-end"><?php echo $male; ?></td>
+                                    <td>Active</td>
+                                    <td class="text-end"><?php echo $data[6]; ?></td>
                                 </tr>
                                 <tr>
                                     <td>Female</td>
-                                    <td>1.3k</td>
-                                </tr>
-                                <tr>
-                                    <td>Active</td>
-                                    <td>1.3k</td>
-                                </tr>
-                                <tr>
+                                    <td class="text-end"><?php echo $female; ?></td>
                                     <td>Expired</td>
-                                    <td>1.3k</td>
+                                    <td class="text-end"><?php echo $data[7]; ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Total</td>
-                                    <td>7.8k</td>
+                                    <td colspan="2">Total</td>
+                                    <td colspan="2" class="text-end"><?php echo $male+$female; ?></td>
                                 </tr>
                             </table>
                         </div>
@@ -141,11 +142,11 @@
                                 </tr>
                                 <tr>
                                     <td>Books</td>
-                                    <td>1.3k</td>
+                                    <td class="text-end"><?php echo $data[8]; ?></td>
                                 </tr>
                                 <tr>
                                     <td>Genres</td>
-                                    <td>1.3k</td>
+                                    <td class="text-end"><?php echo $data[9]; ?></td>
                                 </tr>
                             </table>
                         </div>
@@ -167,7 +168,6 @@
                 <a href="books" class="nav-link link-dark"><i class="fa-solid fa-book me-2"></i><span>Books</span></a>
                 <a href="members" class="nav-link link-dark"><i class="fa-solid fa-users me-2"></i><span>Members</span></a>
                 <a href="genres" class="nav-link link-dark"><i class="fa-solid fa-sitemap me-2"></i><span>Genres</span></a>
-                <a href="settings" class="nav-link link-dark"><i class="fa-solid fa-cog me-2"></i><span>Settings</span></a>
             </nav>
         </div>
         <div class="p-3 border-top">
