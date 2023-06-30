@@ -1,5 +1,6 @@
 $(document).ready(function(){
     var url = window.location.href;
+    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
 
     function append(table, offset, book, borrower, issue, due, returned, id){
         var status, fine = "-", action;
@@ -20,7 +21,7 @@ $(document).ready(function(){
         }
         issue = moment(issue).format("DD-MM-YYYY");
         due = moment(due).format("DD-MM-YYYY");
-        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+book+"</td><td>"+borrower.toUpperCase()+"</td><td class='text-center'>"+issue+"</td><td class='text-center'>"+due+"</td><td class='text-center "+status+"</td><td class='text-center'>"+returned+"</td><td class='text-end'>"+fine+"</td><td class='text-center'>"+action+"</td></tr>");
+        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td class='text-nowrap'>"+book+"</td><td>"+borrower.toUpperCase()+"</td><td class='text-center text-nowrap'>"+issue+"</td><td class='text-center text-nowrap'>"+due+"</td><td class='text-center "+status+"</td><td class='text-center text-nowrap'>"+returned+"</td><td class='text-end'>"+fine+"</td><td class='text-center'>"+action+"</td></tr>");
     }
 
     function load_data(page){
@@ -37,7 +38,6 @@ $(document).ready(function(){
             url,
             {action: "load-data", page: page},
         ).done(function(data){
-            console.log(data);
             var feedback = JSON.parse(data);
             var total_records = feedback[2];
             var offset = (page-1)*25+1;
@@ -79,7 +79,6 @@ $(document).ready(function(){
             url,
             form_data
         ).done(function(data){
-            console.log(data);
             var feedback = JSON.parse(data);
             if(feedback[0]==true){
                 $("#data-form")[0].reset();
@@ -97,7 +96,6 @@ $(document).ready(function(){
                 url,
                 {action: "update", id: id}
             ).done(function(data){
-                console.log(data);
                 var feedback = JSON.parse(data);
                 alert(feedback[1]);
                 if(feedback[0]==true){

@@ -24,7 +24,7 @@
             return $feedback;
         }
         if(in_array($_POST["action"], ["load-data", "search"])){
-            $statement = "WITH RECURSIVE genre_hierarchy AS (SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
+            $statement = "WITH RECURSIVE genre_hierarchy AS( SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, NOT EXISTS (SELECT 1 FROM borrows WHERE book = b.id AND returned IS NULL) AS returned, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
         }elseif(in_array($_POST["action"], ["insert", "update"])){
             $title = trim($_POST["title"]);
             $authors = trim($_POST["authors"]);
@@ -47,11 +47,11 @@
                 if($sql->rowCount()>0){
                     $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
                     foreach($output[1] as &$row){
-                        $genres = explode(",", $row[4]);
+                        $genres = explode(",", $row[5]);
                         foreach($genres as &$genre){
                             $genre = strtoupper(substr($genre, 0, 3));
                         }
-                        $row[4] = implode("-", $genres);
+                        $row[5] = implode("-", $genres);
                     }
                     $sql = $conn->prepare("SELECT COUNT(*) FROM books");
                     $sql->execute();

@@ -14,6 +14,7 @@
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
     if($_SERVER["REQUEST_METHOD"]=="POST"){
+        sleep(3);
         function sql_execute($sql, $success, $error){
             try{
                 $sql->execute();
@@ -23,7 +24,6 @@
             }
             return $feedback;
         }
-
         $output = array();
         if(in_array($_POST["action"], ["insert", "update"])){
             $name = trim($_POST["name"]);
@@ -58,15 +58,28 @@
             $sql->bindParam(6, $address, PDO::PARAM_STR);
             $output = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
         }elseif($_POST["action"]=="load-view"){
-            $sql = $conn->prepare("SELECT member_id, name, dob, gender, registration, renewal, phone, email, address FROM members WHERE id = ?");
+            $sql = $conn->prepare("SELECT * FROM members WHERE id = ?");
             $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
-            $output = sql_execute($sql, null, "Couldn't fetch records");
+            $error = "Couldn't fetch records";
+            $output = sql_execute($sql, null, $error);
             if($output[0] == true){
                 if($sql->rowCount()==1){
                     $output[1] = $sql->fetch(PDO::FETCH_NUM);
+                    $id = array_shift($output[1]);
+                    $sql = $conn->prepare("SELECT books.title, books.isbn, borrows.issue, borrows.due FROM borrows JOIN books ON books.id = borrows.book WHERE borrows.member = ?");
+                    $sql->bindParam(1, $id, PDO::PARAM_INT);
+                    $output = array_merge($output, sql_execute($sql, null, $error));
+                    if($output[2] == true){
+                        if($sql->rowCount()>0){
+                            $output[3] = $sql->fetchAll(PDO::FETCH_NUM);
+                        }else{
+                            $output[2] = false;
+                            $output[3] = "No records found";
+                        }
+                    }
                 }else{
                     $output[0] = false;
-                    $output[1] = "Coudn't fetch record details";
+                    $output[1] = "Member's details not found";
                 }
             }
         }elseif($_POST["action"]=="load-edit"){
@@ -96,6 +109,10 @@
             $sql->bindParam(1, $_POST["months"], PDO::PARAM_INT);
             $sql->bindParam(2, $_POST["id"], PDO::PARAM_INT);
             $output = sql_execute($sql, "Renew date updated succesfully", "Couldn't update renew date");
+        }elseif($_POST["action"]=="delete"){
+            $sql = $conn->prepare("DELETE FROM members WHERE id = ?");
+            $sql->bindParam(1, $_POST["id"], PDO::PARAM_INT);
+            $output = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }elseif($_POST["action"]=="search"){
             $search = "%".$_POST["search"]."%";
             $sql = $conn->prepare("SELECT id, member_id, name, registration, renewal FROM members WHERE name LIKE ? OR member_id = ?");
@@ -181,7 +198,7 @@
                                 <th>Registration</th>
                                 <th>Renewal</th>
                                 <th>Status</th>
-                                <th colspan="3">Action</th>
+                                <th colspan="4">Action</th>
                             </tr>
                         </table>
                     </div>
@@ -302,9 +319,10 @@
                         </div>
                     </div>
                     <div class="table-responsive mt-3">
-                        <table class="table table-bordered table-striped table-sm">
+                        <table id="view-table" class="table table-bordered table-striped table-sm">
                             <tr>
                                 <th>Sl</th>
+                                <th>Title</th>
                                 <th>ISBN</th>
                                 <th>Issued</th>
                                 <th>Due</th>

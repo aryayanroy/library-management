@@ -1,9 +1,14 @@
 $(document).ready(function(){
     var url = window.location.href;
-    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
+    var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>"; 
 
-    function append(table, offset, title, authors, isbn, call_number, id){
-        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+title+"</td><td>"+authors+"</td><td class='text-nowrap'>"+isbn+"</td><td></td><td class='text-nowrap'>"+call_number+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+id+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+id+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+    function append(table, offset, title, authors, isbn, status, call_number, id){
+        if(status){
+            status = "text-success'>Yes";
+        }else{
+            status = "text-danger'>No";
+        }
+        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+title+"</td><td>"+authors+"</td><td class='text-nowrap'>"+isbn+"</td><td class='text-center "+status+"</td><td class='text-nowrap'>"+call_number+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+id+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+id+"><i class='fa-solid fa-trash'></i></button></td></tr>");
     }
 
     function load_data(page){
@@ -30,7 +35,7 @@ $(document).ready(function(){
                 var rows = feedback[1];
                 for(i=0; i<rows.length; i++){
                     var row = rows[i];
-                    append(table, offset, row[1], row[2], row[3], row[4], row[0]);
+                    append(table, offset, row[1], row[2], row[3], row[4], row[5], row[0]);
                 }
                 $("#records-count").html(total_records);
                 var total_pages = Math.ceil(total_records/25);
