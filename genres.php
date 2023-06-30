@@ -22,6 +22,9 @@
             }
             return $feedback;
         }
+        if(in_array($_POST["action"], ["load-data", "search"])){
+            $statement = "SELECT parent.title, child.title, COALESCE(book_count, 0) AS book_count, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre LEFT JOIN (SELECT genre, COUNT(*) AS book_count FROM books GROUP BY genre) AS book_counts ON parent.id = book_counts.genre ";
+        }
         $output =  array();
         if($_POST["action"]=="load-genre"){     //Load genre
             $sql = $conn->prepare("SELECT id, title FROM genres");
@@ -32,14 +35,13 @@
             }
         }elseif($_POST["action"]=="load-data"){     //Load record
             $offset = ($_POST["page"]-1)*25;
-            $statement = " AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre";
-            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id".$statement." LIMIT ?, 25");
+            $sql = $conn->prepare($statement."LIMIT ?, 25");
             $sql->bindParam(1, $offset, PDO::PARAM_INT);
             $output = sql_execute($sql, null, "Couldn't fetch records");
             if($output[0] = true){
                 if($sql->rowCount()>0){
                     $output[1] = $sql->fetchAll(PDO::FETCH_NUM);
-                    $sql = $conn->prepare("SELECT COUNT(*)".$statement);
+                    $sql = $conn->prepare("SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre");
                     $sql->execute();
                     $output[2] = $sql->fetch(PDO::FETCH_NUM)[0];
                 }else{
@@ -69,7 +71,7 @@
             $output = sql_execute($sql, "Record deleted successfully", "Couldn't delete the record");
         }elseif($_POST["action"]=="search"){
             $search = "%".$_POST["search"]."%";
-            $sql = $conn->prepare("SELECT parent.title, child.title, parent.id AS child_title FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre WHERE parent.title LIKE ?");
+            $sql = $conn->prepare($statement."WHERE parent.title LIKE ?");
             $sql->bindParam(1, $search, PDO::PARAM_STR);
             $output = sql_execute($sql, null, "Couldn't fetch records");
             if($output[0]==true){

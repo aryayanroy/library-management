@@ -24,7 +24,7 @@
             return $feedback;
         }
         if(in_array($_POST["action"], ["load-data", "search"])){
-            $statement = "WITH RECURSIVE genre_hierarchy AS( SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, NOT EXISTS (SELECT 1 FROM borrows WHERE book = b.id AND returned IS NULL) AS returned, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
+            $statement = "WITH RECURSIVE genre_hierarchy AS ( SELECT id, title, parent_genre, title AS genre_hierarchy FROM genres WHERE parent_genre IS NULL UNION ALL SELECT g.id, g.title, g.parent_genre, CONCAT_WS(',', gh.genre_hierarchy, g.title) AS genre_hierarchy FROM genres g INNER JOIN genre_hierarchy gh ON g.parent_genre = gh.id) SELECT b.id, b.title, b.authors, b.isbn, NOT EXISTS (SELECT 1 FROM borrows WHERE book = b.id AND returned IS NULL) AS returned, gh.genre_hierarchy FROM books b JOIN genre_hierarchy gh ON b.genre = gh.id ";
         }elseif(in_array($_POST["action"], ["insert", "update"])){
             $title = trim($_POST["title"]);
             $authors = trim($_POST["authors"]);

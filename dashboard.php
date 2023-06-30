@@ -12,6 +12,14 @@
     $sql->bindParam(1, $_SESSION["admin"], PDO::PARAM_STR);
     $sql->execute();
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
+
+    $sql = $conn->prepare("SELECT COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NULL), 0), COALESCE((SELECT COUNT(*) FROM borrows WHERE returned IS NOT NULL), 0), COALESCE((SELECT SUM(DATEDIFF(CURDATE(), due)) FROM borrows WHERE returned IS NULL AND CURDATE() > due), 0), COALESCE((SELECT SUM(DATEDIFF(returned, due)) FROM borrows WHERE returned IS NOT NULL AND returned > due), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS TRUE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE gender IS FALSE), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal <= CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM members WHERE renewal > CURDATE()), 0), COALESCE((SELECT COUNT(*) FROM books), 0), COALESCE((SELECT COUNT(*) FROM genres AS parent LEFT JOIN genres AS child ON parent.id = child.parent_genre), 0)");
+    $sql->execute();
+    $borrow = $sql->fetch(PDO::FETCH_NUM);
+    $loan = $borrow[0];
+    $returned = $borrow[1];
+    $collected = $borrow[2];
+    $pending = $borrow[3];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +27,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genres | Library Management</title>
+    <title>Dashboard | Library Management</title>
     <link rel="shortcut icon" href="assets/public/images/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,8 +39,8 @@
 <body>
     <div class="container-xxl">
         <div class="row">
-            <aside class="d-none d-md-block col-3 col-xl-2 min-vh-100 border-end">
-                <div class="py-3 d-flex flex-column sticky-top h-100">
+            <aside class="d-none d-md-block col-3 col-xl-2 sticky-top vh-100 border-end">
+                <div class="py-3 d-flex flex-column h-100">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 64" width=50 class="mx-auto"><path d="M55 26.5v23.8c0 1.2-.4 2.2-1.3 3.2-.9.9-1.9 1.5-3.2 1.6-3.5.4-6.8 1.3-10.1 2.6S34 60.8 31 62.9a6.06 6.06 0 0 1-3.5 1.1 6.06 6.06 0 0 1-3.5-1.1c-3-2.1-6.1-3.9-9.4-5.2s-6.7-2.2-10.1-2.6c-1.3-.2-2.3-.7-3.2-1.6-.9-1-1.3-2-1.3-3.2V26.5c0-1.3.5-2.4 1.4-3.2s2-1.2 3.1-1c4 .6 8 2 11.9 4 3.9 2.1 7.6 4.8 11.1 8.1 3.5-3.3 7.2-6 11.1-8.1s7.9-3.4 11.9-4c1.2-.2 2.2.1 3.1 1 .9.8 1.4 1.9 1.4 3.2z" fill="#004d40"/><path d="M39.5 11.8c0 3.3-1.1 6.1-3.4 8.4s-5.1 3.4-8.4 3.4-6.1-1.1-8.4-3.4-3.4-5.1-3.4-8.4 1.1-6.1 3.4-8.4S24.4 0 27.7 0s6.1 1.1 8.4 3.4 3.4 5.1 3.4 8.4z" fill="#e65100"/></svg>
                     <hr>
                     <nav class="nav nav-pills flex-column flex-grow-1">
@@ -60,7 +68,88 @@
                     </div>
                 </header>
                 <article class="container-fluid py-3">
-                    
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-4">
+                            <table class="table table-striped table-sm">
+                                <tr>
+                                    <th colspan="2">Borrows</th>
+                                </tr>
+                                <tr>
+                                    <td>Loans</td>
+                                    <td class="text-end"><?php echo $loan; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Returned</td>
+                                    <td class="text-end"><?php echo $returned; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-end"><?php echo $loan+$returned; ?></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <table class="table table-striped table-sm">
+                                <tr>
+                                    <th colspan="2">Fines</th>
+                                </tr>
+                                <tr>
+                                    <td>Collected</td>
+                                    <td class="text-end"><?php echo $collected; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Pending</td>
+                                    <td class="text-end"><?php echo $pending; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-end"><?php echo $collected+$pending; ?></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <table class="table table-striped table-sm">
+                                <tr>
+                                    <th colspan="2">Members</th>
+                                </tr>
+                                <tr>
+                                    <td>Male</td>
+                                    <td>1.3k</td>
+                                </tr>
+                                <tr>
+                                    <td>Female</td>
+                                    <td>1.3k</td>
+                                </tr>
+                                <tr>
+                                    <td>Active</td>
+                                    <td>1.3k</td>
+                                </tr>
+                                <tr>
+                                    <td>Expired</td>
+                                    <td>1.3k</td>
+                                </tr>
+                                <tr>
+                                    <td>Total</td>
+                                    <td>7.8k</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <table class="table table-striped table-sm">
+                                <tr>
+                                    <th colspan="2">Books</th>
+                                </tr>
+                                <tr>
+                                    <td>Books</td>
+                                    <td>1.3k</td>
+                                </tr>
+                                <tr>
+                                    <td>Genres</td>
+                                    <td>1.3k</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
                 </article>
             </main>
         </div>

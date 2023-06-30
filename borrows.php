@@ -14,7 +14,6 @@
     $username = $sql->fetch(PDO::FETCH_NUM)[0];
 
     if($_SERVER["REQUEST_METHOD"]=="POST"){
-        sleep(3);
         function sql_execute($sql, $success, $error){
             try{
                 $sql->execute();
@@ -47,7 +46,7 @@
             }
         }elseif($_POST["action"]=="insert"){
             $member = trim($_POST["member"]);
-            $sql = $conn->prepare("SELECT DATEDIFF(renewal, CURDATE()) AS day_diff FROM members WHERE member_id = ?");
+            $sql = $conn->prepare("SELECT DATEDIFF(renewal, CURDATE()) FROM members WHERE member_id = ?");
             $sql->bindParam(1, $member, PDO::PARAM_STR);
             $error = "Couldn't record the data";
             $output = sql_execute($sql, null, $error);
@@ -62,7 +61,7 @@
                             if($sql->rowCount()==1){
                                 if($sql->fetch(PDO::FETCH_NUM)[0]==0){
                                     $period = trim($_POST["period"]);
-                                    $sql = $conn->prepare("INSERT INTO borrows (book, member, due) SELECT (SELECT id FROM books WHERE isbn = ?) AS book, (SELECT id FROM members WHERE member_id = ?) AS member, DATE_ADD(CURDATE(), INTERVAL ? WEEK) AS due");
+                                    $sql = $conn->prepare("INSERT INTO borrows(book, member, due) SELECT (SELECT id FROM books WHERE isbn = ?), (SELECT id FROM members WHERE member_id = ?), DATE_ADD(CURDATE(), INTERVAL ? WEEK)");
                                     $sql->bindParam(1, $book, PDO::PARAM_STR);
                                     $sql->bindParam(2, $member, PDO::PARAM_STR);
                                     $sql->bindParam(3, $period, PDO::PARAM_INT);

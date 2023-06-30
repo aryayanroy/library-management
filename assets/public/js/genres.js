@@ -2,8 +2,8 @@ $(document).ready(function(){
     var url = window.location.href;
     var loading = "<i class='fas fa-circle-notch fa-spin fa-xl'></i>";
 
-    function append(table, offset, genre, sub_genre, id){
-        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td></td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+id+"' data-title='"+genre+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+id+"><i class='fa-solid fa-trash'></i></button></td></tr>");
+    function append(table, offset, genre, sub_genre, books, id){
+        table.append("<tr><td class='text-center'>"+(i+offset)+"</td><td>"+genre+"</td><td>"+sub_genre+"</td><td>"+books+"</td><td class='text-center'><button type='button' class='btn btn-primary btn-sm edit-btn' value='"+id+"' data-title='"+genre+"'><i class='fa-solid fa-pen'></i></button></td><td class='text-center'><button type='button' class='btn btn-danger btn-sm delete-btn' value="+id+"><i class='fa-solid fa-trash'></i></button></td></tr>");
     }
 
     //load data
@@ -35,7 +35,7 @@ $(document).ready(function(){
                     if(row[1]==null){
                         row[1] = "-" ;
                     }
-                    append(table, offset, row[0], row[1], row[2]);
+                    append(table, offset, row[0], row[1], row[2], row[3]);
                 }
                 count.html(total_records);
                 var total_pages = Math.ceil(total_records/25);
@@ -189,7 +189,7 @@ $(document).ready(function(){
                         if(row[1]==null){
                             row[1] = "-" ;
                         }
-                        append(table, 1, row[0], row[1], row[2]);
+                        append(table, 1, row[0], row[1], row[2], row[3]);
                     }
                     $("#records-count").html(count);
                 }else{
