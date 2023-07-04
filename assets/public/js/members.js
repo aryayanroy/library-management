@@ -200,7 +200,7 @@ $(document).ready(function(){
                         table.append("<tr><td class='text-center'>"+(i+1)+"</td><td>"+row[0]+"</td><td class='text-nowrap'>"+row[1]+"</td><td class='text-nowrap'>"+row[2]+"</td><td class='text-nowrap'>"+row[3]+"</td></tr>")
                     }
                 }else{
-                    table.append("<tr><td colspan='4' class='text-center'>"+feedback[3]+"</td></tr>")
+                    table.append("<tr><td colspan='5' class='text-center'>"+feedback[3]+"</td></tr>")
                 }
                 $("#view-modal").modal("show");
             }else{

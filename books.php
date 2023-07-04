@@ -62,7 +62,7 @@
             $sql->bindParam(1, $title, PDO::PARAM_STR);
             $sql->bindParam(2, $authors, PDO::PARAM_STR);
             $sql->bindParam(3, $isbn, PDO::PARAM_STR);
-            $sql->bindParam(4, $_["genre"], PDO::PARAM_INT);
+            $sql->bindParam(4, $_POST["genre"], PDO::PARAM_INT);
             $output = sql_execute($sql, "Data recorded successfully", "Couldn't record the data");
         }elseif($_POST["action"]=="load-edit"){
             $sql = $conn->prepare("SELECT * FROM books WHERE id = ?");
